@@ -4,6 +4,7 @@ from flask import (
     request,
 )
 from flask.views import MethodView
+from sqlalchemy.exc import IntegrityError
 
 from models import (
     db,
@@ -17,10 +18,14 @@ def ping():
 
 class UserView(MethodView):
     def post(self):
-        username = request.form['username']
-        db.session.add(User(username=username))
-        db.session.commit()
+        if 'username' not in request.form:
+            return jsonify(dict(status='error', error='no username')), 400
 
-        return jsonify(dict(
-            status='ok',
-        ))
+        username = request.form['username']
+        try:
+            db.session.add(User(username=username))
+            db.session.commit()
+        except IntegrityError:
+            return jsonify(dict(status='error', error='user already exists')), 400
+
+        return jsonify(dict(status='ok'))
