@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import (
+    abort,
     jsonify,
     request,
 )
@@ -19,13 +20,13 @@ def ping():
 class UserView(MethodView):
     def post(self):
         if 'username' not in request.form:
-            return jsonify(dict(status='error', error='no username')), 400
+            return abort(400, 'no username')
 
         username = request.form['username']
         try:
             db.session.add(User(name=username))
             db.session.commit()
         except IntegrityError:
-            return jsonify(dict(status='error', error='user already exists')), 400
+            return abort(400, 'user already exists')
 
         return jsonify(dict(status='ok'))
