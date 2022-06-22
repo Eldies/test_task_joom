@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import (
     db,
+    Invitation,
     Meeting,
     User,
 )
@@ -39,11 +40,11 @@ class MeetingView(MethodView):
         if 'creator_username' not in request.form:
             return abort(400, 'no username')
 
-        creator_id = User.query.filter_by(
+        creator = User.query.filter_by(
             name=request.form['creator_username'],
         ).first_or_404(
             description='User with that name does not exist',
-        ).id
+        )
         try:
             start_datetime = datetime.fromisoformat(request.form.get('start')).astimezone(tz=None)
             end_datetime = datetime.fromisoformat(request.form.get('end')).astimezone(tz=None)
@@ -53,11 +54,21 @@ class MeetingView(MethodView):
             return abort(400, 'end should not be earlier than start')
 
         meeting = Meeting(
-            creator_id=creator_id,
+            creator=creator,
             start=start_datetime,
             end=end_datetime,
             description=request.form.get('description'),
         )
         db.session.add(meeting)
+
+        if 'invitees' in request.form:
+            invitee_names = request.form['invitees'].split(',')
+            invitees = [
+                User.query.filter_by(name=name).first_or_404('User "{}" does not exist'.format(name))
+                for name in invitee_names
+            ]
+            for invitee in invitees:
+                db.session.add(Invitation(invitee=invitee, meeting=meeting,))
+
         db.session.commit()
         return jsonify(dict(status='ok', meeting_id=meeting.id))

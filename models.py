@@ -16,3 +16,15 @@ class Meeting(db.Model):
     start = db.Column(db.DateTime, nullable=False)
     end = db.Column(db.DateTime, nullable=False)
     description = db.Column(db.String(200))
+
+    creator = db.relationship("User")
+    invitations = db.relationship("Invitation", back_populates="meeting")
+
+
+class Invitation(db.Model):
+    invitee_id = db.Column(db.Integer, ForeignKey("user.id"), primary_key=True)
+    meeting_id = db.Column(db.Integer, ForeignKey("meeting.id"), primary_key=True)
+    answer = db.Column(db.Boolean)
+
+    invitee = db.relationship("User")
+    meeting = db.relationship("Meeting", back_populates="invitations")
