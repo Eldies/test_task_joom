@@ -16,6 +16,10 @@ class TestImageView(unittest.TestCase):
 
         self.client = app.test_client()
 
+    def tearDown(self):
+        with app.app_context():
+            db.drop_all()
+
     def test_post_ok(self):
         with app.app_context():
             assert User.query.with_entities(User.name).all() == []
