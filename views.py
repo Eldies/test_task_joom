@@ -49,6 +49,8 @@ class MeetingView(MethodView):
             end_datetime = datetime.fromisoformat(request.form.get('end')).astimezone(tz=None)
         except ValueError:
             return abort(400, 'incorrect time')
+        if start_datetime > end_datetime:
+            return abort(400, 'end should not be earlier than start')
 
         meeting = Meeting(
             creator_id=creator_id,

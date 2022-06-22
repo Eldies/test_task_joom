@@ -77,3 +77,8 @@ class TestImageView(unittest.TestCase):
         response = self.client.post('/meeting', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User with that name does not exist'}
+
+    def test_post_end_before_start(self):
+        response = self.client.post('/meeting', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
+        assert response.status_code == 400
+        assert response.json == {'status': 'error', 'error': 'end should not be earlier than start'}
