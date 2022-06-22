@@ -23,7 +23,7 @@ class UserView(MethodView):
 
         username = request.form['username']
         try:
-            db.session.add(User(username=username))
+            db.session.add(User(name=username))
             db.session.commit()
         except IntegrityError:
             return jsonify(dict(status='error', error='user already exists')), 400

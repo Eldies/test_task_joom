@@ -18,12 +18,12 @@ class TestImageView(unittest.TestCase):
 
     def test_post_ok(self):
         with app.app_context():
-            assert User.query.with_entities(User.username).all() == []
+            assert User.query.with_entities(User.name).all() == []
         response = self.client.post('/user', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
         with app.app_context():
-            assert User.query.with_entities(User.username).all() == [('bar',)]
+            assert User.query.with_entities(User.name).all() == [('bar',)]
 
     def test_post_no_username(self):
         response = self.client.post('/user', data=dict(foo='bar'))
@@ -32,7 +32,7 @@ class TestImageView(unittest.TestCase):
 
     def test_post_username_already_exists(self):
         with app.app_context():
-            db.session.add(User(username='foo'))
+            db.session.add(User(name='foo'))
             db.session.commit()
         response = self.client.post('/user', data=dict(username='foo'))
         assert response.status_code == 400
