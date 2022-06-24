@@ -122,13 +122,27 @@ class TestImageView(unittest.TestCase):
                 assert invitation.invitee.name in ('inv1', 'inv2')
                 assert invitation.answer is None
 
-    def test_post_with_wrong_invitees(self):
+    def test_post_with_nonexistent_invitee(self):
         with app.app_context():
             db.session.add(User(name='inv1'))
             db.session.commit()
         response = self.client.post('/meeting', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
+        with app.app_context():
+            assert Meeting.query.count() == 0
+            assert Invitation.query.count() == 0
+
+    @parameterized.expand([
+        ('aa bb',),
+        ('aa, bb',),
+        ('1aa',),
+        (' aa',),
+    ])
+    def test_post_with_wrong_invitees(self, invitees):
+        response = self.client.post('/meeting', data=dict(self.default_args, invitees=invitees))
+        assert response.status_code == 400
+        assert response.json == {'status': 'error', 'error': {'invitees': ['Invalid input.']}}
         with app.app_context():
             assert Meeting.query.count() == 0
             assert Invitation.query.count() == 0

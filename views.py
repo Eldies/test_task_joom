@@ -57,7 +57,11 @@ class MeetingForm(Form):
     creator_username = UsernameField('creator_username')
     start = DateTimeField('start', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
     end = DateTimeField('end', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
-    description = StringField('description')
+    description = StringField('description', validators=[validators.Optional()])
+    invitees = StringField('invitees', validators=[
+        validators.Optional(),
+        validators.Regexp('^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$'),
+    ])
 
     def validate(self):
         if not super(MeetingForm, self).validate():
