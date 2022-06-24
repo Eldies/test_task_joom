@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from datetime import (
+    datetime,
+    timezone,
+)
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey
 
@@ -13,12 +17,20 @@ class User(db.Model):
 class Meeting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     creator_id = db.Column(db.Integer, ForeignKey("user.id"))
-    start = db.Column(db.DateTime, nullable=False)
-    end = db.Column(db.DateTime, nullable=False)
+    start = db.Column(db.Integer, nullable=False)
+    end = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(200))
 
     creator = db.relationship("User")
     invitations = db.relationship("Invitation", back_populates="meeting")
+
+    @property
+    def start_datetime(self):
+        return datetime.fromtimestamp(self.start, tz=timezone.utc)
+
+    @property
+    def end_datetime(self):
+        return datetime.fromtimestamp(self.end, tz=timezone.utc)
 
 
 class Invitation(db.Model):

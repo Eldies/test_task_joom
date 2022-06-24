@@ -48,8 +48,8 @@ class TestImageView(unittest.TestCase):
             meeting = Meeting.query.first()
             assert meeting.id == 1
             assert meeting.creator.name == 'creator'
-            assert meeting.start.astimezone(tz=timezone.utc) == datetime(2022, 6, 22, 18, 0, tzinfo=timezone.utc)
-            assert meeting.end.astimezone(tz=timezone.utc) == datetime(2022, 6, 22, 23, 0, tzinfo=timezone.utc)
+            assert meeting.start == datetime(2022, 6, 22, 18, 0, tzinfo=timezone.utc).timestamp()
+            assert meeting.end == datetime(2022, 6, 22, 23, 0, tzinfo=timezone.utc).timestamp()
             assert meeting.description is None
             assert meeting.invitations == []
 
@@ -148,13 +148,13 @@ class TestImageView(unittest.TestCase):
             assert Invitation.query.count() == 0
 
     def test_get_ok(self):
-        start = datetime.fromisoformat('2022-06-22T19:00:00+00:00').astimezone(tz=None)
-        end = datetime.fromisoformat('2022-06-22T20:00:00+00:00').astimezone(tz=None)
+        start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
+        end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
         with app.app_context():
             user1 = User(name='inv1')
             user2 = User(name='inv2')
             user3 = User(name='inv3')
-            meeting = Meeting(creator_id=1, start=start, end=end)
+            meeting = Meeting(creator_id=1, start=start.timestamp(), end=end.timestamp())
             inv1 = Invitation(invitee=user1, meeting=meeting, answer=None)
             inv2 = Invitation(invitee=user2, meeting=meeting, answer=True)
             inv3 = Invitation(invitee=user3, meeting=meeting, answer=False)
@@ -170,8 +170,8 @@ class TestImageView(unittest.TestCase):
                 'id': 1,
                 'creator': 'creator',
                 'description': None,
-                'start': start.isoformat(),
-                'end': end.isoformat(),
+                'start_datetime': start.isoformat(),
+                'end_datetime': end.isoformat(),
                 'invitees': [
                     {'accepted_invitation': None, 'username': 'inv1'},
                     {'accepted_invitation': True, 'username': 'inv2'},

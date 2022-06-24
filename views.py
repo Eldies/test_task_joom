@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import timezone
 from flask import (
     abort,
     jsonify,
@@ -87,8 +88,8 @@ class MeetingsView(MethodView):
 
         meeting = Meeting(
             creator=creator,
-            start=form.data['start'].astimezone(tz=None),
-            end=form.data['end'].astimezone(tz=None),
+            start=form.data['start'].astimezone(tz=timezone.utc).timestamp(),
+            end=form.data['end'].astimezone(tz=timezone.utc).timestamp(),
             description=form.data.get('description'),
         )
         db.session.add(meeting)
@@ -112,8 +113,8 @@ class MeetingsView(MethodView):
         desc = dict(
             id=meeting.id,
             description=meeting.description,
-            start=meeting.start.astimezone(tz=None).isoformat(timespec='seconds'),
-            end=meeting.end.astimezone(tz=None).isoformat(timespec='seconds'),
+            start_datetime=meeting.start_datetime.isoformat(),
+            end_datetime=meeting.end_datetime.isoformat(),
             creator=meeting.creator.name,
             invitees=[
                 dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
