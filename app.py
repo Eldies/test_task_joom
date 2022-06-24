@@ -20,8 +20,8 @@ def create_app():
         db.create_all()
 
     app.add_url_rule('/ping', view_func=views.ping)
-    app.add_url_rule('/user', view_func=views.UserView.as_view('user'))
-    app.add_url_rule('/meeting', view_func=views.MeetingView.as_view('meeting'))
+    app.add_url_rule('/users', view_func=views.UsersView.as_view('users'))
+    app.add_url_rule('/meetings', view_func=views.MeetingsView.as_view('meetings'))
 
     app.register_error_handler(400, error_handler)
     app.register_error_handler(404, error_handler)

@@ -33,13 +33,13 @@ class UsernameField(StringField):
     ]
 
 
-class UserForm(Form):
+class UsersForm(Form):
     username = UsernameField('username')
 
 
-class UserView(MethodView):
+class UsersView(MethodView):
     def post(self):
-        form = UserForm(request.form)
+        form = UsersForm(request.form)
         if not form.validate():
             return abort(400, form.errors)
 
@@ -53,7 +53,7 @@ class UserView(MethodView):
         return jsonify(dict(status='ok'))
 
 
-class MeetingForm(Form):
+class MeetingsForm(Form):
     creator_username = UsernameField('creator_username')
     start = DateTimeField('start', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
     end = DateTimeField('end', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
@@ -64,7 +64,7 @@ class MeetingForm(Form):
     ])
 
     def validate(self):
-        if not super(MeetingForm, self).validate():
+        if not super(MeetingsForm, self).validate():
             return False
 
         if self.end.data < self.start.data:
@@ -74,9 +74,9 @@ class MeetingForm(Form):
         return True
 
 
-class MeetingView(MethodView):
+class MeetingsView(MethodView):
     def post(self):
-        form = MeetingForm(request.form)
+        form = MeetingsForm(request.form)
         if not form.validate():
             return abort(400, form.errors)
 

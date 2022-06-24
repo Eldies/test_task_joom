@@ -24,7 +24,7 @@ class TestImageView(unittest.TestCase):
     def test_post_ok(self):
         with app.app_context():
             assert User.query.with_entities(User.name).all() == []
-        response = self.client.post('/user', data=dict(username='bar'))
+        response = self.client.post('/users', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
         with app.app_context():
@@ -39,7 +39,7 @@ class TestImageView(unittest.TestCase):
         ('1ab', 'Invalid input.'),
     ])
     def test_post_wrong_username(self, username, error):
-        response = self.client.post('/user', data=dict(username=username))
+        response = self.client.post('/users', data=dict(username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
 
@@ -47,6 +47,6 @@ class TestImageView(unittest.TestCase):
         with app.app_context():
             db.session.add(User(name='foo'))
             db.session.commit()
-        response = self.client.post('/user', data=dict(username='foo'))
+        response = self.client.post('/users', data=dict(username='foo'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': 'user already exists'}

@@ -40,7 +40,7 @@ class TestImageView(unittest.TestCase):
     def test_post_ok(self):
         with app.app_context():
             assert Meeting.query.count() == 0
-        response = self.client.post('/meeting', data=self.default_args)
+        response = self.client.post('/meetings', data=self.default_args)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
@@ -54,7 +54,7 @@ class TestImageView(unittest.TestCase):
             assert meeting.invitations == []
 
     def test_post_ok_with_description(self):
-        response = self.client.post('/meeting', data=dict(self.default_args, description='desc'))
+        response = self.client.post('/meetings', data=dict(self.default_args, description='desc'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
@@ -70,7 +70,7 @@ class TestImageView(unittest.TestCase):
         ('end', 'a', 'Not a valid datetime value.'),
     ])
     def test_post_incorrect_date(self, field_name, value, error):
-        response = self.client.post('/meeting', data=dict(self.default_args, **{field_name: value}))
+        response = self.client.post('/meetings', data=dict(self.default_args, **{field_name: value}))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {field_name: [error]}}
         with app.app_context():
@@ -84,21 +84,21 @@ class TestImageView(unittest.TestCase):
         ('a b', 'Invalid input.'),
     ])
     def test_post_wrong_username(self, username, error):
-        response = self.client.post('/meeting', data=dict(self.default_args, creator_username=username))
+        response = self.client.post('/meetings', data=dict(self.default_args, creator_username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'creator_username': [error]}}
         with app.app_context():
             assert Meeting.query.count() == 0
 
     def test_post_nonexistent_username(self):
-        response = self.client.post('/meeting', data=dict(self.default_args, creator_username='FOO'))
+        response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User with that name does not exist'}
         with app.app_context():
             assert Meeting.query.count() == 0
 
     def test_post_end_before_start(self):
-        response = self.client.post('/meeting', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
+        response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'end': ['end should not be earlier than start']}}
         with app.app_context():
@@ -109,7 +109,7 @@ class TestImageView(unittest.TestCase):
             db.session.add(User(name='inv1'))
             db.session.add(User(name='inv2'))
             db.session.commit()
-        response = self.client.post('/meeting', data=dict(self.default_args, invitees='inv1,inv2'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
@@ -126,7 +126,7 @@ class TestImageView(unittest.TestCase):
         with app.app_context():
             db.session.add(User(name='inv1'))
             db.session.commit()
-        response = self.client.post('/meeting', data=dict(self.default_args, invitees='inv1,inv2'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
         with app.app_context():
@@ -140,7 +140,7 @@ class TestImageView(unittest.TestCase):
         (' aa',),
     ])
     def test_post_with_wrong_invitees(self, invitees):
-        response = self.client.post('/meeting', data=dict(self.default_args, invitees=invitees))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees=invitees))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'invitees': ['Invalid input.']}}
         with app.app_context():
