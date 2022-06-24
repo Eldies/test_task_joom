@@ -8,8 +8,10 @@ from flask import (
 from flask.views import MethodView
 from sqlalchemy.exc import IntegrityError
 from wtforms import (
+    BooleanField,
     DateTimeField,
     Form,
+    IntegerField,
     StringField,
     validators,
 )
@@ -122,3 +124,30 @@ class MeetingsView(MethodView):
             ],
         )
         return jsonify(dict(status='ok', meeting_description=desc))
+
+
+class AnswerInvitationForm(Form):
+    username = UsernameField('username')
+    meeting_id = IntegerField('meeting_id', validators=[validators.DataRequired()])
+    answer = BooleanField('answer')
+
+
+class AnswerInvitationView(MethodView):
+    def post(self):
+        form = AnswerInvitationForm(request.form)
+        if not form.validate():
+            return abort(400, form.errors)
+
+        user = User.query.filter_by(
+            name=form.data['username'],
+        ).first_or_404(
+            description='User with that name does not exist',
+        )
+
+        invitation = Invitation.query.filter_by(invitee=user, meeting_id=form.data['meeting_id']).first_or_404(
+            description='User was not invited to this meeting',
+        )
+
+        invitation.answer = form.data['answer']
+        db.session.commit()
+        return jsonify(dict(status='ok'))
