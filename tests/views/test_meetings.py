@@ -146,3 +146,37 @@ class TestImageView(unittest.TestCase):
         with app.app_context():
             assert Meeting.query.count() == 0
             assert Invitation.query.count() == 0
+
+    def test_get_ok(self):
+        start = datetime.fromisoformat('2022-06-22T19:00:00+00:00').astimezone(tz=None)
+        end = datetime.fromisoformat('2022-06-22T20:00:00+00:00').astimezone(tz=None)
+        with app.app_context():
+            user1 = User(name='inv1')
+            user2 = User(name='inv2')
+            user3 = User(name='inv3')
+            meeting = Meeting(creator_id=1, start=start, end=end)
+            inv1 = Invitation(invitee=user1, meeting=meeting, answer=None)
+            inv2 = Invitation(invitee=user2, meeting=meeting, answer=True)
+            inv3 = Invitation(invitee=user3, meeting=meeting, answer=False)
+            db.session.add_all([user1, user2, user3, meeting, inv1, inv2, inv3])
+            db.session.commit()
+
+            response = self.client.get('/meetings/{}'.format(meeting.id))
+
+        assert response.status_code == 200
+        assert response.json == {
+            'status': 'ok',
+            'meeting_description': {
+                'id': 1,
+                'creator': 'creator',
+                'description': None,
+                'start': start.isoformat(),
+                'end': end.isoformat(),
+                'invitees': [
+                    {'accepted_invitation': None, 'username': 'inv1'},
+                    {'accepted_invitation': True, 'username': 'inv2'},
+                    {'accepted_invitation': False,'username': 'inv3'},
+                ],
+            },
+        }
+

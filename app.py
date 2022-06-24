@@ -22,6 +22,7 @@ def create_app():
     app.add_url_rule('/ping', view_func=views.ping, methods=['GET'])
     app.add_url_rule('/users', view_func=views.UsersView.as_view('users'), methods=['POST'])
     app.add_url_rule('/meetings', view_func=views.MeetingsView.as_view('meetings'), methods=['POST'])
+    app.add_url_rule('/meetings/<int:meeting_id>', view_func=views.MeetingsView.as_view('get_meeting'), methods=['GET'])
 
     app.register_error_handler(400, error_handler)
     app.register_error_handler(404, error_handler)

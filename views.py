@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
 from flask import (
     abort,
     jsonify,
@@ -105,3 +104,20 @@ class MeetingsView(MethodView):
 
         db.session.commit()
         return jsonify(dict(status='ok', meeting_id=meeting.id))
+
+    def get(self, meeting_id: int):
+        meeting = Meeting.query.filter_by(id=meeting_id).first_or_404(
+            description='Meeting with that id does not exist',
+        )
+        desc = dict(
+            id=meeting.id,
+            description=meeting.description,
+            start=meeting.start.astimezone(tz=None).isoformat(timespec='seconds'),
+            end=meeting.end.astimezone(tz=None).isoformat(timespec='seconds'),
+            creator=meeting.creator.name,
+            invitees=[
+                dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
+                for invitation in meeting.invitations
+            ],
+        )
+        return jsonify(dict(status='ok', meeting_description=desc))
