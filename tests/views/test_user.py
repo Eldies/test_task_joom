@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from parameterized import parameterized
 import unittest
 
 from app import app, db
@@ -29,10 +30,18 @@ class TestImageView(unittest.TestCase):
         with app.app_context():
             assert User.query.with_entities(User.name).all() == [('bar',)]
 
-    def test_post_no_username(self):
-        response = self.client.post('/user', data=dict(foo='bar'))
+    @parameterized.expand([
+        (None, 'This field is required.'),
+        ('', 'This field is required.'),
+        ('a', 'Field must be between 2 and 20 characters long.'),
+        ('a' * 21, 'Field must be between 2 and 20 characters long.'),
+        ('a b', 'Invalid input.'),
+        ('1ab', 'Invalid input.'),
+    ])
+    def test_post_wrong_username(self, username, error):
+        response = self.client.post('/user', data=dict(username=username))
         assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': 'no username'}
+        assert response.json == {'status': 'error', 'error': {'username': [error]}}
 
     def test_post_username_already_exists(self):
         with app.app_context():
