@@ -43,7 +43,7 @@ class UsersView(MethodView):
         if not form.validate():
             return abort(400, form.errors)
 
-        username = request.form['username']
+        username = form.data['username']
         try:
             db.session.add(User(name=username))
             db.session.commit()
@@ -63,8 +63,8 @@ class MeetingsForm(Form):
         validators.Regexp('^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$'),
     ])
 
-    def validate(self):
-        if not super(MeetingsForm, self).validate():
+    def validate(self, *args, **kwargs):
+        if not super(MeetingsForm, self).validate(*args, **kwargs):
             return False
 
         if self.end.data < self.start.data:
@@ -81,7 +81,7 @@ class MeetingsView(MethodView):
             return abort(400, form.errors)
 
         creator = User.query.filter_by(
-            name=request.form['creator_username'],
+            name=form.data['creator_username'],
         ).first_or_404(
             description='User with that name does not exist',
         )
@@ -90,12 +90,12 @@ class MeetingsView(MethodView):
             creator=creator,
             start=form.data['start'].astimezone(tz=None),
             end=form.data['end'].astimezone(tz=None),
-            description=request.form.get('description'),
+            description=form.data.get('description'),
         )
         db.session.add(meeting)
 
-        if 'invitees' in request.form:
-            invitee_names = request.form['invitees'].split(',')
+        if form.data.get('invitees'):
+            invitee_names = form.data.get('invitees').split(',')
             invitees = [
                 User.query.filter_by(name=name).first_or_404('User "{}" does not exist'.format(name))
                 for name in invitee_names
