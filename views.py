@@ -82,7 +82,7 @@ class MeetingsView(MethodView):
         if not form.validate():
             return abort(400, form.errors)
 
-        creator = User.query.filter_by(
+        creator = db.session.query(User).filter_by(
             name=form.data['creator_username'],
         ).first_or_404(
             description='User with that name does not exist',
@@ -99,7 +99,7 @@ class MeetingsView(MethodView):
         if form.data.get('invitees'):
             invitee_names = form.data.get('invitees').split(',')
             invitees = [
-                User.query.filter_by(name=name).first_or_404('User "{}" does not exist'.format(name))
+                db.session.query(User).filter_by(name=name).first_or_404('User "{}" does not exist'.format(name))
                 for name in invitee_names
             ]
             for invitee in invitees:
@@ -109,7 +109,7 @@ class MeetingsView(MethodView):
         return jsonify(dict(status='ok', meeting_id=meeting.id))
 
     def get(self, meeting_id: int):
-        meeting = Meeting.query.filter_by(id=meeting_id).first_or_404(
+        meeting = db.session.query(Meeting).filter_by(id=meeting_id).first_or_404(
             description='Meeting with that id does not exist',
         )
         desc = dict(
@@ -138,13 +138,13 @@ class AnswerInvitationView(MethodView):
         if not form.validate():
             return abort(400, form.errors)
 
-        user = User.query.filter_by(
+        user = db.session.query(User).filter_by(
             name=form.data['username'],
         ).first_or_404(
             description='User with that name does not exist',
         )
 
-        invitation = Invitation.query.filter_by(invitee=user, meeting_id=form.data['meeting_id']).first_or_404(
+        invitation = db.session.query(Invitation).filter_by(invitee=user, meeting_id=form.data['meeting_id']).first_or_404(
             description='User was not invited to this meeting',
         )
 
