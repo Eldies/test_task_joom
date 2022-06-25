@@ -93,6 +93,6 @@ class TestAnswerInvitationView(unittest.TestCase):
     def test_post_nonexistent_username(self):
         response = self.client.post('/invitations', data=dict(self.default_args, username='FOO'))
         assert response.status_code == 404
-        assert response.json == {'status': 'error', 'error': 'User with that name does not exist'}
+        assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
         with app.app_context():
             assert Invitation.query.filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
