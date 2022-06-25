@@ -23,12 +23,12 @@ class TestUsersView(unittest.TestCase):
 
     def test_post_ok(self):
         with app.app_context():
-            assert User.query.with_entities(User.name).all() == []
+            assert db.session.query(User).with_entities(User.name).all() == []
         response = self.client.post('/users', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
         with app.app_context():
-            assert User.query.with_entities(User.name).all() == [('bar',)]
+            assert db.session.query(User).with_entities(User.name).all() == [('bar',)]
 
     @parameterized.expand([
         (None, 'field required'),

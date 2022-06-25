@@ -39,13 +39,13 @@ class TestMeetingsView(unittest.TestCase):
 
     def test_post_ok(self):
         with app.app_context():
-            assert Meeting.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
         response = self.client.post('/meetings', data=self.default_args)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
-            assert Meeting.query.count() == 1
-            meeting = Meeting.query.first()
+            assert db.session.query(Meeting).count() == 1
+            meeting = db.session.query(Meeting).first()
             assert meeting.id == 1
             assert meeting.creator.name == 'creator'
             assert meeting.start == datetime(2022, 6, 22, 18, 0, tzinfo=timezone.utc).timestamp()
@@ -65,7 +65,7 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
-            meeting = Meeting.query.first()
+            meeting = db.session.query(Meeting).first()
             assert meeting.start == int(datetime(2022, 6, 22, 19, 0, tzinfo=timezone.utc).timestamp())
             assert meeting.end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
 
@@ -74,7 +74,7 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
-            meeting = Meeting.query.first()
+            meeting = db.session.query(Meeting).first()
             assert meeting.description == 'desc'
 
     @parameterized.expand([
@@ -90,7 +90,7 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {field_name: [error]}}
         with app.app_context():
-            assert Meeting.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
 
     @parameterized.expand([
         (None, 'field required'),
@@ -104,21 +104,21 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'creator_username': [error]}}
         with app.app_context():
-            assert Meeting.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
 
     def test_post_nonexistent_username(self):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
         with app.app_context():
-            assert Meeting.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
 
     def test_post_end_before_start(self):
         response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'__root__': ['end should not be earlier than start']}}
         with app.app_context():
-            assert Meeting.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
 
     def test_post_ok_with_invitees(self):
         with app.app_context():
@@ -129,8 +129,8 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         with app.app_context():
-            assert Meeting.query.count() == 1
-            meeting = Meeting.query.first()
+            assert db.session.query(Meeting).count() == 1
+            meeting = db.session.query(Meeting).first()
             invitations = meeting.invitations
             assert len(invitations) == 2
             for invitation in invitations:
@@ -146,8 +146,8 @@ class TestMeetingsView(unittest.TestCase):
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
         with app.app_context():
-            assert Meeting.query.count() == 0
-            assert Invitation.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
+            assert db.session.query(Invitation).count() == 0
 
     @parameterized.expand([
         ('aa bb',),
@@ -163,8 +163,8 @@ class TestMeetingsView(unittest.TestCase):
             'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*$"']},
         }
         with app.app_context():
-            assert Meeting.query.count() == 0
-            assert Invitation.query.count() == 0
+            assert db.session.query(Meeting).count() == 0
+            assert db.session.query(Invitation).count() == 0
 
     def test_get_ok(self):
         start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
