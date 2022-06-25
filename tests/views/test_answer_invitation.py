@@ -5,7 +5,10 @@ from datetime import datetime
 from parameterized import parameterized
 import unittest
 
-from app import app, db
+from app import (
+    create_app,
+    db,
+)
 from models import (
     Invitation,
     Meeting,
@@ -15,10 +18,11 @@ from models import (
 
 class TestAnswerInvitationView(unittest.TestCase):
     def setUp(self):
-        app.logger.setLevel(logging.DEBUG)
-        app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-        with app.app_context():
+        self.app = create_app()
+        self.app.logger.setLevel(logging.DEBUG)
+        self.app.config['TESTING'] = True
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+        with self.app.app_context():
             db.create_all()
             db.session.commit()
             db.session.expire_on_commit = False
@@ -42,10 +46,10 @@ class TestAnswerInvitationView(unittest.TestCase):
             answer='true',
         )
 
-        self.client = app.test_client()
+        self.client = self.app.test_client()
 
     def tearDown(self):
-        with app.app_context():
+        with self.app.app_context():
             db.drop_all()
 
     @parameterized.expand([
@@ -53,12 +57,12 @@ class TestAnswerInvitationView(unittest.TestCase):
         (False,),
     ])
     def test_post_ok(self, answer):
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
         response = self.client.post('/invitations', data=dict(self.default_args, answer='true' if answer else 'false'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer == answer
 
     @parameterized.expand([
@@ -73,33 +77,33 @@ class TestAnswerInvitationView(unittest.TestCase):
         response = self.client.post('/invitations', data=dict(self.default_args, username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 
     def test_post_string_meeting_id(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id='DD'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'meeting_id': ['value is not a valid integer']}}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 
     def test_post_nonexistent_meeting(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id=9999))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 
     def test_post_not_invited_user(self):
         response = self.client.post('/invitations', data=dict(self.default_args, username=self.not_invited_user.name))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 
     def test_post_nonexistent_username(self):
         response = self.client.post('/invitations', data=dict(self.default_args, username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None

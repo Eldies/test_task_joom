@@ -7,7 +7,10 @@ import logging
 from parameterized import parameterized
 import unittest
 
-from app import app, db
+from app import (
+    create_app,
+    db,
+)
 from models import (
     Invitation,
     Meeting,
@@ -17,15 +20,16 @@ from models import (
 
 class TestMeetingsView(unittest.TestCase):
     def setUp(self):
-        app.logger.setLevel(logging.DEBUG)
-        app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-        with app.app_context():
+        self.app = create_app()
+        self.app.logger.setLevel(logging.DEBUG)
+        self.app.config['TESTING'] = True
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+        with self.app.app_context():
             db.create_all()
             db.session.add(User(name='creator'))
             db.session.commit()
 
-        self.client = app.test_client()
+        self.client = self.app.test_client()
 
         self.default_args = dict(
             creator_username='creator',
@@ -34,16 +38,16 @@ class TestMeetingsView(unittest.TestCase):
         )
 
     def tearDown(self):
-        with app.app_context():
+        with self.app.app_context():
             db.drop_all()
 
     def test_post_ok(self):
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
         response = self.client.post('/meetings', data=self.default_args)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 1
             meeting = db.session.query(Meeting).first()
             assert meeting.id == 1
@@ -64,7 +68,7 @@ class TestMeetingsView(unittest.TestCase):
         )
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        with app.app_context():
+        with self.app.app_context():
             meeting = db.session.query(Meeting).first()
             assert meeting.start == int(datetime(2022, 6, 22, 19, 0, tzinfo=timezone.utc).timestamp())
             assert meeting.end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
@@ -73,7 +77,7 @@ class TestMeetingsView(unittest.TestCase):
         response = self.client.post('/meetings', data=dict(self.default_args, description='desc'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        with app.app_context():
+        with self.app.app_context():
             meeting = db.session.query(Meeting).first()
             assert meeting.description == 'desc'
 
@@ -89,7 +93,7 @@ class TestMeetingsView(unittest.TestCase):
         response = self.client.post('/meetings', data=dict(self.default_args, **{field_name: value}))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {field_name: [error]}}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
 
     @parameterized.expand([
@@ -103,32 +107,32 @@ class TestMeetingsView(unittest.TestCase):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'creator_username': [error]}}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
 
     def test_post_nonexistent_username(self):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
 
     def test_post_end_before_start(self):
         response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'__root__': ['end should not be earlier than start']}}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
 
     def test_post_ok_with_invitees(self):
-        with app.app_context():
+        with self.app.app_context():
             db.session.add(User(name='inv1'))
             db.session.add(User(name='inv2'))
             db.session.commit()
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 1
             meeting = db.session.query(Meeting).first()
             invitations = meeting.invitations
@@ -139,13 +143,13 @@ class TestMeetingsView(unittest.TestCase):
                 assert invitation.answer is None
 
     def test_post_with_nonexistent_invitee(self):
-        with app.app_context():
+        with self.app.app_context():
             db.session.add(User(name='inv1'))
             db.session.commit()
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
             assert db.session.query(Invitation).count() == 0
 
@@ -162,14 +166,14 @@ class TestMeetingsView(unittest.TestCase):
             'status': 'error',
             'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*$"']},
         }
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
             assert db.session.query(Invitation).count() == 0
 
     def test_get_ok(self):
         start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
         end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
-        with app.app_context():
+        with self.app.app_context():
             user1 = User(name='inv1')
             user2 = User(name='inv2')
             user3 = User(name='inv3')

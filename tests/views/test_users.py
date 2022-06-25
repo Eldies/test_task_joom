@@ -3,31 +3,35 @@ import logging
 from parameterized import parameterized
 import unittest
 
-from app import app, db
+from app import (
+    create_app,
+    db,
+)
 from models import User
 
 
 class TestUsersView(unittest.TestCase):
     def setUp(self):
-        app.logger.setLevel(logging.DEBUG)
-        app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-        with app.app_context():
+        self.app = create_app()
+        self.app.logger.setLevel(logging.DEBUG)
+        self.app.config['TESTING'] = True
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+        with self.app.app_context():
             db.create_all()
 
-        self.client = app.test_client()
+        self.client = self.app.test_client()
 
     def tearDown(self):
-        with app.app_context():
+        with self.app.app_context():
             db.drop_all()
 
     def test_post_ok(self):
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(User).with_entities(User.name).all() == []
         response = self.client.post('/users', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
-        with app.app_context():
+        with self.app.app_context():
             assert db.session.query(User).with_entities(User.name).all() == [('bar',)]
 
     @parameterized.expand([
@@ -44,7 +48,7 @@ class TestUsersView(unittest.TestCase):
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
 
     def test_post_username_already_exists(self):
-        with app.app_context():
+        with self.app.app_context():
             db.session.add(User(name='foo'))
             db.session.commit()
         response = self.client.post('/users', data=dict(username='foo'))

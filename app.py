@@ -35,6 +35,3 @@ def create_app():
     app.register_error_handler(ValidationError, pydantic_validation_error_handler)
 
     return app
-
-
-app = create_app()

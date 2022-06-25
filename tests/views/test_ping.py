@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from app import app
+from app import create_app
 
 
 class TestPingView(unittest.TestCase):
     def setUp(self):
+        app = create_app()
         app.config['TESTING'] = True
         self.client = app.test_client()
 
