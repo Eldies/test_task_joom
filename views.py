@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
-from datetime import timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 from flask import (
     abort,
     jsonify,
     request,
 )
 from flask.views import MethodView
-from sqlalchemy.exc import IntegrityError
-from wtforms import (
-    BooleanField,
-    DateTimeField,
-    Form,
-    IntegerField,
-    StringField,
-    validators,
+from pydantic import (
+    BaseModel,
+    constr,
+    root_validator,
 )
+from sqlalchemy.exc import IntegrityError
+from typing import Optional
 
 from models import (
     db,
@@ -23,31 +24,24 @@ from models import (
     User,
 )
 
+
 def ping():
     return 'pong'
 
 
-class UsernameField(StringField):
-    validators = [
-        validators.DataRequired(),
-        validators.Length(min=2, max=20),
-        validators.Regexp('^[a-zA-Z_]\\w*$'),
-    ]
+UsernameField = constr(min_length=2, max_length=20, regex='^[a-zA-Z_]\\w*$')
 
 
-class UsersForm(Form):
-    username = UsernameField('username')
+class UsersModel(BaseModel):
+    username: UsernameField
 
 
 class UsersView(MethodView):
     def post(self):
-        form = UsersForm(request.form)
-        if not form.validate():
-            return abort(400, form.errors)
+        form = UsersModel(**request.form)
 
-        username = form.data['username']
         try:
-            db.session.add(User(name=username))
+            db.session.add(User(name=form.username))
             db.session.commit()
         except IntegrityError:
             return abort(400, 'user already exists')
@@ -55,50 +49,41 @@ class UsersView(MethodView):
         return jsonify(dict(status='ok'))
 
 
-def get_user_by_name(name):
+def get_user_by_name(name: str) -> User:
     user = db.session.query(User).filter_by(name=name).first()
     if user is None:
         abort(404, 'User "{}" does not exist'.format(name))
     return user
 
 
-class MeetingsForm(Form):
-    creator_username = UsernameField('creator_username')
-    start = DateTimeField('start', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
-    end = DateTimeField('end', format='%Y-%m-%dT%H:%M:%S%z', validators=[validators.InputRequired()])
-    description = StringField('description', validators=[validators.Optional()])
-    invitees = StringField('invitees', validators=[
-        validators.Optional(),
-        validators.Regexp('^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$'),
-    ])
+class MeetingsModel(BaseModel):
+    creator_username: UsernameField
+    start: datetime
+    end: datetime
+    description: Optional[str]
+    invitees: Optional[constr(regex='^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$')]
 
-    def validate(self, *args, **kwargs):
-        if not super(MeetingsForm, self).validate(*args, **kwargs):
-            return False
-
-        if self.end.data < self.start.data:
-            self.end.errors.append('end should not be earlier than start')
-            return False
-
-        return True
+    @root_validator(skip_on_failure=True)
+    def check_end_is_later_than_start(cls, values):
+        if values.get('end') < values.get('start'):
+            raise ValueError('end should not be earlier than start')
+        return values
 
 
 class MeetingsView(MethodView):
     def post(self):
-        form = MeetingsForm(request.form)
-        if not form.validate():
-            return abort(400, form.errors)
+        form = MeetingsModel(**request.form)
 
         meeting = Meeting(
-            creator=get_user_by_name(form.data['creator_username']),
-            start=form.data['start'].astimezone(tz=timezone.utc).timestamp(),
-            end=form.data['end'].astimezone(tz=timezone.utc).timestamp(),
-            description=form.data.get('description'),
+            creator=get_user_by_name(form.creator_username),
+            start=form.start.astimezone(tz=timezone.utc).timestamp(),
+            end=form.end.astimezone(tz=timezone.utc).timestamp(),
+            description=form.description,
         )
         db.session.add(meeting)
 
-        if form.data.get('invitees'):
-            invitee_names = form.data.get('invitees').split(',')
+        if form.invitees:
+            invitee_names = form.invitees.split(',')
             invitees = [get_user_by_name(name=name) for name in invitee_names]
             for invitee in invitees:
                 db.session.add(Invitation(invitee=invitee, meeting=meeting,))
@@ -124,23 +109,21 @@ class MeetingsView(MethodView):
         return jsonify(dict(status='ok', meeting_description=desc))
 
 
-class AnswerInvitationForm(Form):
-    username = UsernameField('username')
-    meeting_id = IntegerField('meeting_id', validators=[validators.DataRequired()])
-    answer = BooleanField('answer')
+class AnswerInvitationModel(BaseModel):
+    username: UsernameField
+    meeting_id: int
+    answer: bool
 
 
 class AnswerInvitationView(MethodView):
     def post(self):
-        form = AnswerInvitationForm(request.form)
-        if not form.validate():
-            return abort(400, form.errors)
+        form = AnswerInvitationModel(**request.form)
 
-        user = get_user_by_name(form.data['username'])
-        invitation = db.session.query(Invitation).filter_by(invitee=user, meeting_id=form.data['meeting_id']).first()
+        user = get_user_by_name(form.username)
+        invitation = db.session.query(Invitation).filter_by(invitee=user, meeting_id=form.meeting_id).first()
         if invitation is None:
             abort(404, 'User was not invited to this meeting')
 
-        invitation.answer = form.data['answer']
+        invitation.answer = form.answer
         db.session.commit()
         return jsonify(dict(status='ok'))

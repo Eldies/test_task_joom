@@ -62,17 +62,24 @@ class TestAnswerInvitationView(unittest.TestCase):
             assert Invitation.query.filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer == answer
 
     @parameterized.expand([
-        (None, 'This field is required.'),
-        ('', 'This field is required.'),
-        ('a', 'Field must be between 2 and 20 characters long.'),
-        ('a' * 21, 'Field must be between 2 and 20 characters long.'),
-        ('a b', 'Invalid input.'),
-        ('1ab', 'Invalid input.'),
+        (None, 'field required'),
+        ('', 'ensure this value has at least 2 characters'),
+        ('a', 'ensure this value has at least 2 characters'),
+        ('a' * 21, 'ensure this value has at most 20 characters'),
+        ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        ('1ab', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])
     def test_post_wrong_username(self, username, error):
         response = self.client.post('/invitations', data=dict(self.default_args, username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
+        with app.app_context():
+            assert Invitation.query.filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+
+    def test_post_string_meeting_id(self):
+        response = self.client.post('/invitations', data=dict(self.default_args, meeting_id='DD'))
+        assert response.status_code == 400
+        assert response.json == {'status': 'error', 'error': {'meeting_id': ['value is not a valid integer']}}
         with app.app_context():
             assert Invitation.query.filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 

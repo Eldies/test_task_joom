@@ -31,12 +31,12 @@ class TestUsersView(unittest.TestCase):
             assert User.query.with_entities(User.name).all() == [('bar',)]
 
     @parameterized.expand([
-        (None, 'This field is required.'),
-        ('', 'This field is required.'),
-        ('a', 'Field must be between 2 and 20 characters long.'),
-        ('a' * 21, 'Field must be between 2 and 20 characters long.'),
-        ('a b', 'Invalid input.'),
-        ('1ab', 'Invalid input.'),
+        (None, 'field required'),
+        ('', 'ensure this value has at least 2 characters'),
+        ('a', 'ensure this value has at least 2 characters'),
+        ('a' * 21, 'ensure this value has at most 20 characters'),
+        ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        ('1ab', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])
     def test_post_wrong_username(self, username, error):
         response = self.client.post('/users', data=dict(username=username))

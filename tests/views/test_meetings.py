@@ -62,12 +62,12 @@ class TestMeetingsView(unittest.TestCase):
             assert meeting.description == 'desc'
 
     @parameterized.expand([
-        ('start', None, 'This field is required.'),
-        ('start', '', 'This field is required.'),
-        ('start', 'a', 'Not a valid datetime value.'),
-        ('end', None, 'This field is required.'),
-        ('end', '', 'This field is required.'),
-        ('end', 'a', 'Not a valid datetime value.'),
+        ('start', None, 'field required'),
+        ('start', '', 'invalid datetime format'),
+        ('start', 'a', 'invalid datetime format'),
+        ('end', None, 'field required'),
+        ('end', '', 'invalid datetime format'),
+        ('end', 'a', 'invalid datetime format'),
     ])
     def test_post_incorrect_date(self, field_name, value, error):
         response = self.client.post('/meetings', data=dict(self.default_args, **{field_name: value}))
@@ -77,11 +77,11 @@ class TestMeetingsView(unittest.TestCase):
             assert Meeting.query.count() == 0
 
     @parameterized.expand([
-        (None, 'This field is required.'),
-        ('', 'This field is required.'),
-        ('a', 'Field must be between 2 and 20 characters long.'),
-        ('a' * 21, 'Field must be between 2 and 20 characters long.'),
-        ('a b', 'Invalid input.'),
+        (None, 'field required'),
+        ('', 'ensure this value has at least 2 characters'),
+        ('a', 'ensure this value has at least 2 characters'),
+        ('a' * 21, 'ensure this value has at most 20 characters'),
+        ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])
     def test_post_wrong_username(self, username, error):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username=username))
@@ -100,7 +100,7 @@ class TestMeetingsView(unittest.TestCase):
     def test_post_end_before_start(self):
         response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
         assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {'end': ['end should not be earlier than start']}}
+        assert response.json == {'status': 'error', 'error': {'__root__': ['end should not be earlier than start']}}
         with app.app_context():
             assert Meeting.query.count() == 0
 
@@ -142,7 +142,7 @@ class TestMeetingsView(unittest.TestCase):
     def test_post_with_wrong_invitees(self, invitees):
         response = self.client.post('/meetings', data=dict(self.default_args, invitees=invitees))
         assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {'invitees': ['Invalid input.']}}
+        assert response.json == {'status': 'error', 'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$"']}}
         with app.app_context():
             assert Meeting.query.count() == 0
             assert Invitation.query.count() == 0

@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify
+from pydantic import ValidationError
 
 from models import db
 import settings
 import views
+
+
+def pydantic_validation_error_handler(error):
+    return jsonify(dict(status='error', error={err['loc'][0]: [err['msg']] for err in error.errors()})), 400
 
 
 def error_handler(error):
@@ -27,6 +32,7 @@ def create_app():
 
     app.register_error_handler(400, error_handler)
     app.register_error_handler(404, error_handler)
+    app.register_error_handler(ValidationError, pydantic_validation_error_handler)
 
     return app
 
