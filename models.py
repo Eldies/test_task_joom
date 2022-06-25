@@ -4,25 +4,35 @@ from datetime import (
     timezone,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import ForeignKey
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+)
+from sqlalchemy.types import (
+    Boolean,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import relationship
 
 db = SQLAlchemy()
+Base = db.Model
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(20), unique=True, nullable=False)
+class User(Base):
+    id = Column(Integer, primary_key=True)
+    name = Column(String(20), unique=True, nullable=False)
 
 
-class Meeting(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    creator_id = db.Column(db.Integer, ForeignKey("user.id"))
-    start = db.Column(db.Integer, nullable=False)
-    end = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.String(200))
+class Meeting(Base):
+    id = Column(Integer, primary_key=True)
+    creator_id = Column(Integer, ForeignKey("user.id"))
+    start = Column(Integer, nullable=False)
+    end = Column(Integer, nullable=False)
+    description = Column(String(200))
 
-    creator = db.relationship("User")
-    invitations = db.relationship("Invitation", back_populates="meeting")
+    creator = relationship("User")
+    invitations = relationship("Invitation", back_populates="meeting")
 
     @property
     def start_datetime(self):
@@ -33,10 +43,10 @@ class Meeting(db.Model):
         return datetime.fromtimestamp(self.end, tz=timezone.utc)
 
 
-class Invitation(db.Model):
-    invitee_id = db.Column(db.Integer, ForeignKey("user.id"), primary_key=True)
-    meeting_id = db.Column(db.Integer, ForeignKey("meeting.id"), primary_key=True)
-    answer = db.Column(db.Boolean)
+class Invitation(Base):
+    invitee_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
+    meeting_id = Column(Integer, ForeignKey("meeting.id"), primary_key=True)
+    answer = Column(Boolean)
 
-    invitee = db.relationship("User")
-    meeting = db.relationship("Meeting", back_populates="invitations")
+    invitee = relationship("User")
+    meeting = relationship("Meeting", back_populates="invitations")
