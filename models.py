@@ -20,13 +20,17 @@ Base = db.Model
 
 
 class User(Base):
+    __tablename__ = 'users'
+
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True, nullable=False)
 
 
 class Meeting(Base):
+    __tablename__ = 'meetings'
+
     id = Column(Integer, primary_key=True)
-    creator_id = Column(Integer, ForeignKey("user.id"))
+    creator_id = Column(Integer, ForeignKey("users.id"))
     start = Column(Integer, nullable=False)
     end = Column(Integer, nullable=False)
     description = Column(String(200))
@@ -44,8 +48,10 @@ class Meeting(Base):
 
 
 class Invitation(Base):
-    invitee_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    meeting_id = Column(Integer, ForeignKey("meeting.id"), primary_key=True)
+    __tablename__ = 'invitations'
+
+    invitee_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), primary_key=True)
     answer = Column(Boolean)
 
     invitee = relationship("User")
