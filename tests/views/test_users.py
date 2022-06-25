@@ -7,7 +7,7 @@ from app import app, db
 from models import User
 
 
-class TestImageView(unittest.TestCase):
+class TestUsersView(unittest.TestCase):
     def setUp(self):
         app.logger.setLevel(logging.DEBUG)
         app.config['TESTING'] = True

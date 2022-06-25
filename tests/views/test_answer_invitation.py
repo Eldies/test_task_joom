@@ -13,7 +13,7 @@ from models import (
 )
 
 
-class TestImageView(unittest.TestCase):
+class TestAnswerInvitationView(unittest.TestCase):
     def setUp(self):
         app.logger.setLevel(logging.DEBUG)
         app.config['TESTING'] = True
