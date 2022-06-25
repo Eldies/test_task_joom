@@ -158,7 +158,10 @@ class TestMeetingsView(unittest.TestCase):
     def test_post_with_wrong_invitees(self, invitees):
         response = self.client.post('/meetings', data=dict(self.default_args, invitees=invitees))
         assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$"']}}
+        assert response.json == {
+            'status': 'error',
+            'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*$"']},
+        }
         with app.app_context():
             assert Meeting.query.count() == 0
             assert Invitation.query.count() == 0

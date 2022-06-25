@@ -16,7 +16,10 @@ from pydantic import (
     validator,
 )
 from sqlalchemy.exc import IntegrityError
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from models import (
     db,
@@ -62,7 +65,7 @@ class MeetingsModel(BaseModel):
     start: datetime
     end: datetime
     description: Optional[str]
-    invitees: Optional[constr(regex='^[a-zA-Z_]\\w*(,[a-zA-Z_]\\w*)*$')]
+    invitees: Optional[List[UsernameField]]
 
     @root_validator(skip_on_failure=True)
     def check_end_is_later_than_start(cls, values):
@@ -75,6 +78,10 @@ class MeetingsModel(BaseModel):
         if value.tzinfo is None:
             value = value.replace(tzinfo=timezone.utc)
         return value
+
+    @validator('invitees', pre=True)
+    def split_invitees(cls, value):
+        return value.split(',')
 
 
 class MeetingsView(MethodView):
@@ -90,8 +97,7 @@ class MeetingsView(MethodView):
         db.session.add(meeting)
 
         if form.invitees:
-            invitee_names = form.invitees.split(',')
-            invitees = [get_user_by_name(name=name) for name in invitee_names]
+            invitees = [get_user_by_name(name=name) for name in form.invitees]
             for invitee in invitees:
                 db.session.add(Invitation(invitee=invitee, meeting=meeting,))
 
