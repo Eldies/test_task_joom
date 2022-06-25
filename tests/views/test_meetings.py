@@ -53,6 +53,22 @@ class TestMeetingsView(unittest.TestCase):
             assert meeting.description is None
             assert meeting.invitations == []
 
+    def test_post_ok_tz_naive_dates_treated_as_utc_dates(self):
+        response = self.client.post(
+            '/meetings',
+            data=dict(
+                self.default_args,
+                start='2022-06-22T19:00:00',
+                end='2022-06-22T20:00:00',
+            ),
+        )
+        assert response.status_code == 200
+        assert response.json == {'status': 'ok', 'meeting_id': 1}
+        with app.app_context():
+            meeting = Meeting.query.first()
+            assert meeting.start == int(datetime(2022, 6, 22, 19, 0, tzinfo=timezone.utc).timestamp())
+            assert meeting.end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
+
     def test_post_ok_with_description(self):
         response = self.client.post('/meetings', data=dict(self.default_args, description='desc'))
         assert response.status_code == 200

@@ -13,6 +13,7 @@ from pydantic import (
     BaseModel,
     constr,
     root_validator,
+    validator,
 )
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
@@ -68,6 +69,12 @@ class MeetingsModel(BaseModel):
         if values.get('end') < values.get('start'):
             raise ValueError('end should not be earlier than start')
         return values
+
+    @validator('start', 'end')
+    def treat_tz_naive_dates_as_utc(cls, value):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class MeetingsView(MethodView):
