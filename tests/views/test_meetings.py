@@ -180,3 +180,17 @@ class TestMeetingsView(unittest.TestCase):
             },
         }
 
+    def test_get_string_meeting_id(self):
+        response = self.client.get('/meetings/aaaaaa')
+        assert response.status_code == 404
+        assert response.json == {
+            'status': 'error',
+            'error':
+                'The requested URL was not found on the server.'
+                ' If you entered the URL manually please check your spelling and try again.',
+        }
+
+    def test_get_nonexistent_meeting(self):
+        response = self.client.get('/meetings/9999')
+        assert response.status_code == 404
+        assert response.json == {'status': 'error', 'error': 'Meeting with that id does not exist'}
