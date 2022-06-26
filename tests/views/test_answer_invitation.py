@@ -2,7 +2,6 @@
 import logging
 from datetime import datetime
 
-from parameterized import parameterized
 import pytest
 
 from app import (
@@ -49,9 +48,9 @@ class TestAnswerInvitationView:
 
         self.client = self.app.test_client()
 
-    @parameterized.expand([
-        (True,),
-        (False,),
+    @pytest.mark.parametrize('answer', [
+        True,
+        False,
     ])
     def test_post_ok(self, answer):
         with self.app.app_context():
@@ -62,7 +61,7 @@ class TestAnswerInvitationView:
         with self.app.app_context():
             assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer == answer
 
-    @parameterized.expand([
+    @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
         ('', 'ensure this value has at least 2 characters'),
         ('a', 'ensure this value has at least 2 characters'),

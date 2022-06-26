@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from parameterized import parameterized
+
 import pytest
 
 from app import (
@@ -31,7 +31,7 @@ class TestUsersView:
         with self.app.app_context():
             assert db.session.query(User).with_entities(User.name).all() == [('bar',)]
 
-    @parameterized.expand([
+    @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
         ('', 'ensure this value has at least 2 characters'),
         ('a', 'ensure this value has at least 2 characters'),

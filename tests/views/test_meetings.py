@@ -4,7 +4,7 @@ from datetime import (
     timezone,
 )
 import logging
-from parameterized import parameterized
+
 import pytest
 
 from app import (
@@ -78,7 +78,7 @@ class TestMeetingsView:
             meeting = db.session.query(Meeting).first()
             assert meeting.description == 'desc'
 
-    @parameterized.expand([
+    @pytest.mark.parametrize('field_name,value,error', [
         ('start', None, 'field required'),
         ('start', '', 'invalid datetime format'),
         ('start', 'a', 'invalid datetime format'),
@@ -93,7 +93,7 @@ class TestMeetingsView:
         with self.app.app_context():
             assert db.session.query(Meeting).count() == 0
 
-    @parameterized.expand([
+    @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
         ('', 'ensure this value has at least 2 characters'),
         ('a', 'ensure this value has at least 2 characters'),
@@ -150,11 +150,11 @@ class TestMeetingsView:
             assert db.session.query(Meeting).count() == 0
             assert db.session.query(Invitation).count() == 0
 
-    @parameterized.expand([
-        ('aa bb',),
-        ('aa, bb',),
-        ('1aa',),
-        (' aa',),
+    @pytest.mark.parametrize('invitees', [
+        'aa bb',
+        'aa, bb',
+        '1aa',
+        ' aa',
     ])
     def test_post_with_wrong_invitees(self, invitees):
         response = self.client.post('/meetings', data=dict(self.default_args, invitees=invitees))
