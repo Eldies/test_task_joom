@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from parameterized import parameterized
-import unittest
+import pytest
 
 from app import (
     create_app,
@@ -16,8 +16,9 @@ from models import (
 )
 
 
-class TestAnswerInvitationView(unittest.TestCase):
-    def setUp(self):
+class TestAnswerInvitationView:
+    @pytest.fixture(autouse=True)
+    def _setup(self):
         self.app = create_app()
         self.app.logger.setLevel(logging.DEBUG)
         self.app.config['TESTING'] = True
@@ -47,10 +48,6 @@ class TestAnswerInvitationView(unittest.TestCase):
         )
 
         self.client = self.app.test_client()
-
-    def tearDown(self):
-        with self.app.app_context():
-            db.drop_all()
 
     @parameterized.expand([
         (True,),

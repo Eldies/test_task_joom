@@ -5,7 +5,7 @@ from datetime import (
 )
 import logging
 from parameterized import parameterized
-import unittest
+import pytest
 
 from app import (
     create_app,
@@ -18,8 +18,9 @@ from models import (
 )
 
 
-class TestMeetingsView(unittest.TestCase):
-    def setUp(self):
+class TestMeetingsView:
+    @pytest.fixture(autouse=True)
+    def _setup(self):
         self.app = create_app()
         self.app.logger.setLevel(logging.DEBUG)
         self.app.config['TESTING'] = True
@@ -36,10 +37,6 @@ class TestMeetingsView(unittest.TestCase):
             start='2022-06-22T19:00:00+01:00',
             end='2022-06-22T20:00:00-03:00',
         )
-
-    def tearDown(self):
-        with self.app.app_context():
-            db.drop_all()
 
     def test_post_ok(self):
         with self.app.app_context():

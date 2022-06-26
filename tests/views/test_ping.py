@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import unittest
+import pytest
 
 from app import create_app
 
 
-class TestPingView(unittest.TestCase):
-    def setUp(self):
+class TestPingView:
+    @pytest.fixture(autouse=True)
+    def _setup(self):
         app = create_app()
         app.config['TESTING'] = True
         self.client = app.test_client()

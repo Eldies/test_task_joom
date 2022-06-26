@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from parameterized import parameterized
-import unittest
+import pytest
 
 from app import (
     create_app,
@@ -10,8 +10,9 @@ from app import (
 from models import User
 
 
-class TestUsersView(unittest.TestCase):
-    def setUp(self):
+class TestUsersView:
+    @pytest.fixture(autouse=True)
+    def _setup(self):
         self.app = create_app()
         self.app.logger.setLevel(logging.DEBUG)
         self.app.config['TESTING'] = True
@@ -20,10 +21,6 @@ class TestUsersView(unittest.TestCase):
             db.create_all()
 
         self.client = self.app.test_client()
-
-    def tearDown(self):
-        with self.app.app_context():
-            db.drop_all()
 
     def test_post_ok(self):
         with self.app.app_context():
