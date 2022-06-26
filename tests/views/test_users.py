@@ -10,7 +10,7 @@ from app import (
 from models import User
 
 
-class TestUsersView:
+class TestUsersPostView:
     @pytest.fixture(autouse=True)
     def _setup(self):
         self.app = create_app()
@@ -22,14 +22,14 @@ class TestUsersView:
 
         self.client = self.app.test_client()
 
-    def test_post_ok(self):
+    def test_ok(self):
         with self.app.app_context():
-            assert db.session.query(User).with_entities(User.name).all() == []
+            assert db.session.query(User).filter_by(name='bar').first() is None
         response = self.client.post('/users', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
         with self.app.app_context():
-            assert db.session.query(User).with_entities(User.name).all() == [('bar',)]
+            assert db.session.query(User).filter_by(name='bar').first() is not None
 
     @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
@@ -39,12 +39,12 @@ class TestUsersView:
         ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
         ('1ab', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])
-    def test_post_wrong_username(self, username, error):
+    def test_wrong_username(self, username, error):
         response = self.client.post('/users', data=dict(username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
 
-    def test_post_username_already_exists(self):
+    def test_username_already_exists(self):
         with self.app.app_context():
             db.session.add(User(name='foo'))
             db.session.commit()
