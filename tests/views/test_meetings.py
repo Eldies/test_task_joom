@@ -7,7 +7,10 @@ from datetime import (
 import pytest
 
 from app import db
-from app.db_actions import create_user
+from app.db_actions import (
+    create_meeting,
+    create_user,
+)
 from app.models import (
     Invitation,
     Meeting,
@@ -149,15 +152,22 @@ class TestMeetingsGetView:
         self.start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
         self.end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
         db.create_all()
-        creator = create_user(name='creator')
+
         user1 = create_user(name='inv1')
         user2 = create_user(name='inv2')
         user3 = create_user(name='inv3')
-        meeting = Meeting(creator=creator, start=self.start.timestamp(), end=self.end.timestamp())
+        meeting = create_meeting(
+            creator=create_user(name='creator'),
+            start=int(self.start.timestamp()),
+            end=int(self.end.timestamp()),
+            description='DESCRIPTION',
+            invitees=[],
+        )
+
         inv1 = Invitation(invitee=user1, meeting=meeting, answer=None)
         inv2 = Invitation(invitee=user2, meeting=meeting, answer=True)
         inv3 = Invitation(invitee=user3, meeting=meeting, answer=False)
-        db.session.add_all([meeting, inv1, inv2, inv3])
+        db.session.add_all([inv1, inv2, inv3])
         db.session.commit()
         self.meeting_id = meeting.id
 
@@ -172,7 +182,7 @@ class TestMeetingsGetView:
             'meeting_description': {
                 'id': 1,
                 'creator': 'creator',
-                'description': None,
+                'description': 'DESCRIPTION',
                 'start_datetime': self.start.isoformat(),
                 'end_datetime': self.end.isoformat(),
                 'invitees': [

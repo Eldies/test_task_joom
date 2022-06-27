@@ -16,11 +16,11 @@ from pydantic import (
     validator,
 )
 from typing import (
-    List,
     Optional,
 )
 
 from .db_actions import (
+    create_meeting,
     create_user,
     get_user_by_name,
 )
@@ -54,7 +54,7 @@ class MeetingsModel(BaseModel):
     start: datetime
     end: datetime
     description: Optional[str]
-    invitees: Optional[List[UsernameField]]
+    invitees: Optional[list[UsernameField]]
 
     @root_validator(skip_on_failure=True)
     def check_end_is_later_than_start(cls, values):
@@ -77,20 +77,14 @@ class MeetingsView(MethodView):
     def post(self):
         form = MeetingsModel(**request.form)
 
-        meeting = Meeting(
+        meeting = create_meeting(
             creator=get_user_by_name(form.creator_username),
-            start=form.start.astimezone(tz=timezone.utc).timestamp(),
-            end=form.end.astimezone(tz=timezone.utc).timestamp(),
+            start=int(form.start.astimezone(tz=timezone.utc).timestamp()),
+            end=int(form.end.astimezone(tz=timezone.utc).timestamp()),
             description=form.description,
+            invitees=[get_user_by_name(name=name) for name in (form.invitees or [])]
         )
 
-        if form.invitees:
-            invitees = [get_user_by_name(name=name) for name in form.invitees]
-            for invitee in invitees:
-                db.session.add(Invitation(invitee=invitee, meeting=meeting,))
-
-        db.session.add(meeting)
-        db.session.commit()
         return jsonify(dict(status='ok', meeting_id=meeting.id))
 
     def get(self, meeting_id: int):

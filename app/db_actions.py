@@ -7,6 +7,8 @@ from .exceptions import (
 )
 from .models import (
     db,
+    Invitation,
+    Meeting,
     User,
 )
 
@@ -26,3 +28,20 @@ def create_user(name: str) -> User:
         return user
     except IntegrityError:
         raise AlreadyExistsException('user already exists')
+
+
+def create_meeting(creator: User, start: int, end: int, description: str, invitees: list[User]):
+    meeting = Meeting(
+        creator=creator,
+        start=start,
+        end=end,
+        description=description,
+    )
+    db.session.add(meeting)
+
+    for invitee in invitees:
+        db.session.add(Invitation(invitee=invitee, meeting=meeting))
+
+    db.session.add(meeting)
+    db.session.commit()
+    return meeting
