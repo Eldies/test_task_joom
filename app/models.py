@@ -3,6 +3,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -20,6 +21,7 @@ from sqlalchemy.orm import (
 
 metadata = MetaData()
 Base = declarative_base(metadata=metadata)
+db = SQLAlchemy(metadata=metadata)
 
 
 class User(Base):
