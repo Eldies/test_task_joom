@@ -18,9 +18,11 @@ def get_user_by_name(name: str) -> User:
     return user
 
 
-def create_user(name: str) -> None:
+def create_user(name: str) -> User:
     try:
-        db.session.add(User(name=name))
+        user = User(name=name)
+        db.session.add(user)
         db.session.commit()
+        return user
     except IntegrityError:
         raise AlreadyExistsException('user already exists')

@@ -7,10 +7,10 @@ from datetime import (
 import pytest
 
 from app import db
+from app.db_actions import create_user
 from app.models import (
     Invitation,
     Meeting,
-    User,
 )
 
 
@@ -18,8 +18,7 @@ class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, app):
         db.create_all()
-        db.session.add(User(name='creator'))
-        db.session.commit()
+        create_user(name='creator')
 
         self.client = app.test_client()
 
@@ -105,9 +104,8 @@ class TestMeetingsPostView:
         assert db.session.query(Meeting).count() == 0
 
     def test_ok_with_invitees(self):
-        db.session.add(User(name='inv1'))
-        db.session.add(User(name='inv2'))
-        db.session.commit()
+        create_user(name='inv1')
+        create_user(name='inv2')
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
@@ -121,8 +119,7 @@ class TestMeetingsPostView:
             assert invitation.answer is None
 
     def test_with_nonexistent_invitee(self):
-        db.session.add(User(name='inv1'))
-        db.session.commit()
+        create_user(name='inv1')
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
@@ -152,15 +149,15 @@ class TestMeetingsGetView:
         self.start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
         self.end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
         db.create_all()
-        creator = User(name='creator')
-        user1 = User(name='inv1')
-        user2 = User(name='inv2')
-        user3 = User(name='inv3')
+        creator = create_user(name='creator')
+        user1 = create_user(name='inv1')
+        user2 = create_user(name='inv2')
+        user3 = create_user(name='inv3')
         meeting = Meeting(creator=creator, start=self.start.timestamp(), end=self.end.timestamp())
         inv1 = Invitation(invitee=user1, meeting=meeting, answer=None)
         inv2 = Invitation(invitee=user2, meeting=meeting, answer=True)
         inv3 = Invitation(invitee=user3, meeting=meeting, answer=False)
-        db.session.add_all([creator, user1, user2, user3, meeting, inv1, inv2, inv3])
+        db.session.add_all([meeting, inv1, inv2, inv3])
         db.session.commit()
         self.meeting_id = meeting.id
 

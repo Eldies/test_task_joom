@@ -6,7 +6,7 @@ from app.db_actions import (
     create_user,
     get_user_by_name,
 )
-from app.models import User
+from app.exceptions import NotFoundException
 
 
 class TestUsersPostView:
@@ -16,7 +16,8 @@ class TestUsersPostView:
         self.client = app.test_client()
 
     def test_ok(self):
-        assert db.session.query(User).filter_by(name='bar').first() is None
+        with pytest.raises(NotFoundException):
+            get_user_by_name('bar')
         response = self.client.post('/users', data=dict(username='bar'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}

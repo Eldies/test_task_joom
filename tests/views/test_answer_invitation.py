@@ -5,10 +5,10 @@ from datetime import datetime
 import pytest
 
 from app import db
+from app.db_actions import create_user
 from app.models import (
     Invitation,
     Meeting,
-    User,
 )
 
 
@@ -20,17 +20,13 @@ class TestAnswerInvitationView:
         db.session.expire_on_commit = False
         start = datetime.fromisoformat('2022-06-22T19:00:00+00:00')
         end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
-        self.creator = User(name='creator')
-        self.invited_user = User(name='user1')
-        self.not_invited_user = User(name='user2')
+        self.creator = create_user(name='creator')
+        self.invited_user = create_user(name='user1')
+        self.not_invited_user = create_user(name='user2')
         self.meeting = Meeting(creator=self.creator, start=start.timestamp(), end=end.timestamp())
         invitation = Invitation(invitee=self.invited_user, meeting=self.meeting, answer=None)
-        db.session.add_all([self.creator, self.invited_user, self.not_invited_user, self.meeting, invitation])
+        db.session.add_all([self.meeting, invitation])
         db.session.commit()
-
-        db.session.refresh(self.not_invited_user)
-        db.session.refresh(self.invited_user)
-        db.session.refresh(self.meeting)
 
         self.default_args = dict(
             username=self.invited_user.name,
