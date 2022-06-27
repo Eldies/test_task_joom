@@ -130,3 +130,4 @@ dmypy.json
 
 app.db
 .idea/
+coverage_html_report/
