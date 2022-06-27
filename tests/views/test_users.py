@@ -15,8 +15,8 @@ from app.forms import UsersModel
 
 class TestUsersPostView:
     @pytest.fixture(autouse=True)
-    def _setup(self, app):
-        self.client = app.test_client()
+    def _setup(self, client):
+        self.client = client
 
     def test_ok(self):
         with pytest.raises(NotFoundException):

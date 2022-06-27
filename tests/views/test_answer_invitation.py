@@ -16,7 +16,7 @@ from app.forms import AnswerInvitationModel
 
 class TestAnswerInvitationView:
     @pytest.fixture(autouse=True)
-    def _setup(self, app):
+    def _setup(self, client):
         db.session.commit()
         db.session.expire_on_commit = False
         self.creator = create_user(name='creator')
@@ -36,7 +36,7 @@ class TestAnswerInvitationView:
             answer='true',
         )
 
-        self.client = app.test_client()
+        self.client = client
 
     @pytest.mark.parametrize('answer', [
         True,

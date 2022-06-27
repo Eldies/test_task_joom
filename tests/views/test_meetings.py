@@ -23,12 +23,12 @@ from app.forms import MeetingsModel
 
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
-    def _setup(self, app):
+    def _setup(self, client):
         create_user(name='creator')
         create_user(name='invitee1')
         create_user(name='invitee2')
 
-        self.client = app.test_client()
+        self.client = client
 
         self.default_args = dict(
             creator_username='creator',
