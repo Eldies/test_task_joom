@@ -21,6 +21,7 @@ from typing import (
     Optional,
 )
 
+from .db_actions import get_user_by_name
 from .models import (
     db,
     Invitation,
@@ -51,13 +52,6 @@ class UsersView(MethodView):
             return abort(400, 'user already exists')
 
         return jsonify(dict(status='ok'))
-
-
-def get_user_by_name(name: str) -> User:
-    user = db.session.query(User).filter_by(name=name).first()
-    if user is None:
-        abort(404, 'User "{}" does not exist'.format(name))
-    return user
 
 
 class MeetingsModel(BaseModel):
