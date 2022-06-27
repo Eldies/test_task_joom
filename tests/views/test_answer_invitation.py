@@ -48,7 +48,7 @@ class TestAnswerInvitationView:
         (None, 'field required'),
         ('', 'ensure this value has at least 2 characters'),
         ('a', 'ensure this value has at least 2 characters'),
-        ('a' * 21, 'ensure this value has at most 20 characters'),
+        ('a' * 31, 'ensure this value has at most 30 characters'),
         ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
         ('1ab', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])

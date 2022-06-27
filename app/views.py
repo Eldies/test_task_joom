@@ -31,7 +31,7 @@ def ping():
     return 'pong'
 
 
-UsernameField = constr(min_length=2, max_length=20, regex='^[a-zA-Z_]\\w*$')
+UsernameField = constr(min_length=2, max_length=30, regex='^[a-zA-Z_]\\w*$')
 
 
 class UsersModel(BaseModel):
