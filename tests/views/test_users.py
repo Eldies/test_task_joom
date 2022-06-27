@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 from pydantic import ValidationError
+
 import pytest
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 from app.db_actions import (
     create_user,
@@ -8,11 +13,6 @@ from app.db_actions import (
 )
 from app.exceptions import NotFoundException
 from app.forms import UsersModel
-
-from unittest.mock import (
-    Mock,
-    patch,
-)
 
 
 class TestUsersModel:
@@ -25,17 +25,18 @@ class TestUsersModel:
         form = UsersModel(username=username)
         assert form.username == username
 
-    @pytest.mark.parametrize('username,msg', [
-        (None, 'none is not an allowed value'),
-        ('', 'ensure this value has at least 2 characters'),
-        ('a', 'ensure this value has at least 2 characters'),
-        ('a' * 31, 'ensure this value has at most 30 characters'),
-        ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        ('1ab', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+    @pytest.mark.parametrize('form,msg', [
+        (dict(), 'field required'),
+        (dict(username=None), 'none is not an allowed value'),
+        (dict(username=''), 'ensure this value has at least 2 characters'),
+        (dict(username='a'), 'ensure this value has at least 2 characters'),
+        (dict(username='a' * 31), 'ensure this value has at most 30 characters'),
+        (dict(username='a b'), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(username='1ab'),  'string does not match regex "^[a-zA-Z_]\\w*$"'),
     ])
-    def test_not_ok(self, username, msg):
+    def test_not_ok(self, form, msg):
         with pytest.raises(ValidationError) as excinfo:
-            UsersModel(username=username)
+            UsersModel(**form)
         assert len(excinfo.value.errors()) == 1
         assert excinfo.value.errors()[0]['loc'] == ('username',)
         assert excinfo.value.errors()[0]['msg'] == msg
@@ -56,7 +57,7 @@ class TestUsersPostView:
 
     def test_validates_input(self):
         with patch('app.forms.UsersModel', Mock(wraps=UsersModel)) as mock:
-            form = dict(username='bar')
+            form = dict(foo='bar')
             self.client.post('/users', data=form)
             assert mock.call_count == 1
             assert mock.call_args.kwargs == form
