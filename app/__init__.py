@@ -2,9 +2,8 @@
 from flask import Flask, jsonify
 from pydantic import ValidationError
 
-from models import db
-import settings
-import views
+from .models import db
+from . import settings, views
 
 
 def pydantic_validation_error_handler(error):

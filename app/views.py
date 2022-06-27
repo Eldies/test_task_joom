@@ -21,7 +21,7 @@ from typing import (
     Optional,
 )
 
-from models import (
+from .models import (
     db,
     Invitation,
     Meeting,

@@ -8,7 +8,7 @@ from app import (
     create_app,
     db,
 )
-from models import (
+from app.models import (
     Invitation,
     Meeting,
     User,

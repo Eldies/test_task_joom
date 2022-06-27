@@ -7,7 +7,7 @@ from app import (
     create_app,
     db,
 )
-from models import User
+from app.models import User
 
 
 class TestUsersPostView:
