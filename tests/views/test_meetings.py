@@ -3,8 +3,13 @@ from datetime import (
     datetime,
     timezone,
 )
+from pydantic import ValidationError
 
 import pytest
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 from app import db
 from app.db_actions import (
@@ -14,6 +19,51 @@ from app.db_actions import (
     set_answer_for_invitation,
 )
 from app.exceptions import NotFoundException
+from app.forms import MeetingsModel
+
+
+class TestMeetingsModel:
+    default_args = dict(
+        creator_username='aa',
+        start='2022-06-22T19:00:00+01:00',
+        end='2022-06-22T20:00:00-03:00',
+    )
+
+    @pytest.mark.parametrize('form', [
+        default_args,
+        dict(default_args, creator_username='qwertQWERTY23456_'),
+        dict(default_args, creator_username='a'*30),
+        dict(default_args, start='2022-06-22T19:00:00'),
+        dict(default_args, desc='some description'),
+        dict(default_args, invitees='inv1,inv2,inv3'),
+    ])
+    def test_ok(self, form):
+        form = MeetingsModel(**form)
+        assert form.dict() == form
+
+    @pytest.mark.parametrize('form,loc,msg', [
+        (dict(start='2022-06-22T19:00:00', end='2022-06-22T20:00:00'), ('creator_username',), 'field required'),
+        (dict(default_args, creator_username=''), ('creator_username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, creator_username='a'), ('creator_username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, creator_username='a'*31), ('creator_username',), 'ensure this value has at most 30 characters'),
+        (dict(default_args, creator_username='a b'), ('creator_username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, creator_username='1ab'), ('creator_username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(creator_username='aa', end='2022-06-22T19:00:00'), ('start',), 'field required'),
+        (dict(default_args, start='ab'), ('start',), 'invalid datetime format'),
+        (dict(creator_username='aa', start='2022-06-22T19:00:00'), ('end',), 'field required'),
+        (dict(default_args, end='ab'), ('end',), 'invalid datetime format'),
+        (dict(default_args, start=default_args['end'], end=default_args['start']), ('__root__',), 'end should not be earlier than start'),
+        (dict(default_args, invitees='aa aa'), ('invitees', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, invitees='aa,1aa'), ('invitees', 1), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, invitees='1aa'), ('invitees', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, invitees='a'*31), ('invitees', 0), 'ensure this value has at most 30 characters'),
+    ])
+    def test_not_ok(self, form, loc, msg):
+        with pytest.raises(ValidationError) as excinfo:
+            MeetingsModel(**form)
+        assert len(excinfo.value.errors()) == 1
+        assert excinfo.value.errors()[0]['loc'] == loc
+        assert excinfo.value.errors()[0]['msg'] == msg
 
 
 class TestMeetingsPostView:
@@ -47,6 +97,13 @@ class TestMeetingsPostView:
         assert meeting.description is None
         assert meeting.invitations == []
 
+    def test_validates_input(self):
+        with patch('app.forms.MeetingsModel', Mock(wraps=MeetingsModel)) as mock:
+            form = dict(foo='bar')
+            self.client.post('/meetings', data=form)
+            assert mock.call_count == 1
+            assert mock.call_args.kwargs == form
+
     def test_ok_tz_naive_dates_treated_as_utc_dates(self):
         response = self.client.post(
             '/meetings',
@@ -67,40 +124,10 @@ class TestMeetingsPostView:
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         assert get_meeting_by_id(1).description == 'desc'
 
-    @pytest.mark.parametrize('field_name,value,error', [
-        ('start', None, 'field required'),
-        ('start', '', 'invalid datetime format'),
-        ('start', 'a', 'invalid datetime format'),
-        ('end', None, 'field required'),
-        ('end', '', 'invalid datetime format'),
-        ('end', 'a', 'invalid datetime format'),
-    ])
-    def test_incorrect_date(self, field_name, value, error):
-        response = self.client.post('/meetings', data=dict(self.default_args, **{field_name: value}))
-        assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {field_name: [error]}}
-
-    @pytest.mark.parametrize('username,error', [
-        (None, 'field required'),
-        ('', 'ensure this value has at least 2 characters'),
-        ('a', 'ensure this value has at least 2 characters'),
-        ('a' * 31, 'ensure this value has at most 30 characters'),
-        ('a b', 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-    ])
-    def test_wrong_username(self, username, error):
-        response = self.client.post('/meetings', data=dict(self.default_args, creator_username=username))
-        assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {'creator_username': [error]}}
-
     def test_nonexistent_username(self):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
-
-    def test_end_before_start(self):
-        response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
-        assert response.status_code == 400
-        assert response.json == {'status': 'error', 'error': {'__root__': ['end should not be earlier than start']}}
 
     def test_ok_with_invitees(self):
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,invitee2'))
@@ -117,20 +144,6 @@ class TestMeetingsPostView:
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,nonexistent_invitee'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "nonexistent_invitee" does not exist'}
-
-    @pytest.mark.parametrize('invitees', [
-        'aa bb',
-        'aa, bb',
-        '1aa',
-        ' aa',
-    ])
-    def test_with_wrong_invitees(self, invitees):
-        response = self.client.post('/meetings', data=dict(self.default_args, invitees=invitees))
-        assert response.status_code == 400
-        assert response.json == {
-            'status': 'error',
-            'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*$"']},
-        }
 
 
 class TestMeetingsGetView:
