@@ -10,9 +10,9 @@ from app import (
 
 @pytest.fixture()
 def app() -> Flask:
-    app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+    app = create_app({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': 'sqlite://',
+    })
     with app.app_context():
-        db.create_all()
         yield app

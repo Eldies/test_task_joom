@@ -2,7 +2,8 @@
 from datetime import timezone
 from flask import (
     jsonify,
-    request, Response,
+    request,
+    Response,
 )
 from flask.views import MethodView
 

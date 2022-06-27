@@ -20,10 +20,12 @@ def local_exception_handler(error):
     return jsonify(dict(status='error', error=error.args[0])), error.code
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = settings.SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    if test_config is not None:
+        app.config.update(test_config)
     db.init_app(app)
 
     # TODO proper migrations in case of actually using this app
