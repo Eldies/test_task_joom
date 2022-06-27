@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-import logging
-from datetime import datetime
-
 import pytest
 
 from app import db
 from app.db_actions import (
     create_meeting,
     create_user,
+    get_invitation,
 )
-from app.models import Invitation
 
 
 class TestAnswerInvitationView:
@@ -41,11 +38,11 @@ class TestAnswerInvitationView:
         False,
     ])
     def test_ok(self, answer):
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
         response = self.client.post('/invitations', data=dict(self.default_args, answer='true' if answer else 'false'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer == answer
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer == answer
 
     @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
@@ -59,28 +56,28 @@ class TestAnswerInvitationView:
         response = self.client.post('/invitations', data=dict(self.default_args, username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'username': [error]}}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_string_meeting_id(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id='DD'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'meeting_id': ['value is not a valid integer']}}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_nonexistent_meeting(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id=9999))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_not_invited_user(self):
         response = self.client.post('/invitations', data=dict(self.default_args, username=self.not_invited_user.name))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_nonexistent_username(self):
         response = self.client.post('/invitations', data=dict(self.default_args, username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
-        assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
+        assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
