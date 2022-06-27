@@ -13,8 +13,6 @@ def app() -> Flask:
     app = create_app()
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-    context = app.app_context()
-    context.__enter__()
-    db.create_all()
-    yield app
-    context.__exit__(None, None, None)
+    with app.app_context():
+        db.create_all()
+        yield app
