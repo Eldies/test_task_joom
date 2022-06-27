@@ -39,11 +39,11 @@ class Meeting(Base):
     invitations = relationship("Invitation", back_populates="meeting")
 
     @property
-    def start_datetime(self):
+    def start_datetime(self) -> datetime:
         return datetime.fromtimestamp(self.start, tz=timezone.utc)
 
     @property
-    def end_datetime(self):
+    def end_datetime(self) -> datetime:
         return datetime.fromtimestamp(self.end, tz=timezone.utc)
 
 
