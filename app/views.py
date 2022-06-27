@@ -6,17 +6,13 @@ from flask import (
 )
 from flask.views import MethodView
 
+from . import forms
 from .db_actions import (
     create_meeting,
     create_user,
     get_meeting_by_id,
     get_user_by_name,
     set_answer_for_invitation,
-)
-from .forms import (
-    AnswerInvitationModel,
-    MeetingsModel,
-    UsersModel,
 )
 
 
@@ -26,14 +22,14 @@ def ping():
 
 class UsersView(MethodView):
     def post(self) -> Response:
-        form = UsersModel(**request.form)
+        form = forms.UsersModel(**request.form)
         create_user(name=form.username)
         return jsonify(dict(status='ok'))
 
 
 class MeetingsView(MethodView):
     def post(self) -> Response:
-        form = MeetingsModel(**request.form)
+        form = forms.MeetingsModel(**request.form)
 
         meeting = create_meeting(
             creator=get_user_by_name(form.creator_username),
@@ -63,7 +59,7 @@ class MeetingsView(MethodView):
 
 class AnswerInvitationView(MethodView):
     def post(self) -> Response:
-        form = AnswerInvitationModel(**request.form)
+        form = forms.AnswerInvitationModel(**request.form)
         set_answer_for_invitation(
             invitee=get_user_by_name(form.username),
             meeting=get_meeting_by_id(form.meeting_id),
