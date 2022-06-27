@@ -17,8 +17,12 @@ def init_db(app: Flask) -> None:
 
 def test_ok():
     assert db.session.query(User).filter_by(name='not_existing_username').first() is None
-    create_user('not_existing_username')
-    assert db.session.query(User).filter_by(name='not_existing_username').first() is not None
+    created_user = create_user('not_existing_username')
+    found_user = db.session.query(User).filter_by(name='not_existing_username').first()
+    assert found_user is not None
+    assert found_user.id == created_user.id
+    assert found_user.name == created_user.name
+    assert found_user.name == 'not_existing_username'
 
 
 def test_existing_user():

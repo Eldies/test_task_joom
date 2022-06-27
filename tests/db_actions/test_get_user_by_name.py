@@ -18,6 +18,7 @@ def init_db(app: Flask) -> None:
 def test_ok():
     user = get_user_by_name('existing_username')
     assert user is not None
+    assert user.name == 'existing_username'
 
 
 def test_not_existing_user():
