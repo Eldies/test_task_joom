@@ -83,13 +83,13 @@ class MeetingsView(MethodView):
             end=form.end.astimezone(tz=timezone.utc).timestamp(),
             description=form.description,
         )
-        db.session.add(meeting)
 
         if form.invitees:
             invitees = [get_user_by_name(name=name) for name in form.invitees]
             for invitee in invitees:
                 db.session.add(Invitation(invitee=invitee, meeting=meeting,))
 
+        db.session.add(meeting)
         db.session.commit()
         return jsonify(dict(status='ok', meeting_id=meeting.id))
 

@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from app import create_app
-
 
 class TestPingView:
     @pytest.fixture(autouse=True)
-    def _setup(self):
-        app = create_app()
-        app.config['TESTING'] = True
+    def _setup(self, app):
         self.client = app.test_client()
 
     def test_ping(self):

@@ -2,24 +2,10 @@
 from flask import Flask
 import pytest
 
-from app import (
-    create_app,
-    db,
-)
+from app import db
 from app.db_actions import get_user_by_name
 from app.exceptions import NotFoundException
 from app.models import User
-
-
-@pytest.fixture()
-def app() -> Flask:
-    app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-    context = app.app_context()
-    context.__enter__()
-    yield app
-    context.__exit__(None, None, None)
 
 
 @pytest.fixture(autouse=True)
