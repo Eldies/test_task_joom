@@ -10,7 +10,6 @@ from app.models import User
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    db.create_all()
     db.session.add(User(name='existing_username'))
     db.session.commit()
 

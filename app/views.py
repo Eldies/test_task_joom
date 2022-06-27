@@ -22,12 +22,12 @@ from typing import (
 from .db_actions import (
     create_meeting,
     create_user,
+    get_meeting_by_id,
     get_user_by_name,
 )
 from .models import (
     db,
     Invitation,
-    Meeting,
 )
 
 
@@ -88,9 +88,7 @@ class MeetingsView(MethodView):
         return jsonify(dict(status='ok', meeting_id=meeting.id))
 
     def get(self, meeting_id: int):
-        meeting = db.session.query(Meeting).filter_by(id=meeting_id).first()
-        if meeting is None:
-            abort(404, 'Meeting with that id does not exist')
+        meeting = get_meeting_by_id(id=meeting_id)
         desc = dict(
             id=meeting.id,
             description=meeting.description,

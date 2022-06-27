@@ -10,7 +10,6 @@ from app.models import User
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    db.create_all()
     db.session.add(User(name='existing_username'))
     db.session.commit()
 
@@ -18,6 +17,7 @@ def init_db(app: Flask) -> None:
 def test_ok():
     user = get_user_by_name('existing_username')
     assert user is not None
+    assert user == db.session.query(User).first()
     assert user.name == 'existing_username'
 
 

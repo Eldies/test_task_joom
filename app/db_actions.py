@@ -30,7 +30,7 @@ def create_user(name: str) -> User:
         raise AlreadyExistsException('user already exists')
 
 
-def create_meeting(creator: User, start: int, end: int, description: str, invitees: list[User]):
+def create_meeting(creator: User, start: int, end: int, description: str, invitees: list[User]) -> Meeting:
     meeting = Meeting(
         creator=creator,
         start=start,
@@ -44,4 +44,11 @@ def create_meeting(creator: User, start: int, end: int, description: str, invite
 
     db.session.add(meeting)
     db.session.commit()
+    return meeting
+
+
+def get_meeting_by_id(id: int) -> Meeting:
+    meeting = db.session.query(Meeting).filter_by(id=id).first()
+    if meeting is None:
+        raise NotFoundException('Meeting with id "{}" does not exist'.format(id))
     return meeting

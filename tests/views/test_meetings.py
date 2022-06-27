@@ -20,7 +20,6 @@ from app.models import (
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, app):
-        db.create_all()
         create_user(name='creator')
 
         self.client = app.test_client()
@@ -206,4 +205,4 @@ class TestMeetingsGetView:
     def test_nonexistent_meeting(self):
         response = self.client.get('/meetings/9999')
         assert response.status_code == 404
-        assert response.json == {'status': 'error', 'error': 'Meeting with that id does not exist'}
+        assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}

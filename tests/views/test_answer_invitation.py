@@ -15,7 +15,6 @@ from app.models import Invitation
 class TestAnswerInvitationView:
     @pytest.fixture(autouse=True)
     def _setup(self, app):
-        db.create_all()
         db.session.commit()
         db.session.expire_on_commit = False
         self.creator = create_user(name='creator')

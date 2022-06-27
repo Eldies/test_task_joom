@@ -16,7 +16,6 @@ from app.models import (
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    db.create_all()
     create_user('creator')
     create_user('user1')
     create_user('user2')

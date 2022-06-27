@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from app import db
 from app.db_actions import (
     create_user,
     get_user_by_name,
@@ -12,7 +11,6 @@ from app.exceptions import NotFoundException
 class TestUsersPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, app):
-        db.create_all()
         self.client = app.test_client()
 
     def test_ok(self):
