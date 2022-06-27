@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from pydantic import ValidationError
-
 import pytest
 from unittest.mock import (
     Mock,
@@ -14,35 +12,6 @@ from app.db_actions import (
     get_invitation,
 )
 from app.forms import AnswerInvitationModel
-
-
-class TestAnswerInvitationModel:
-    @pytest.mark.parametrize('form', [
-        dict(username='aa', meeting_id=1, answer=True),
-        dict(username='a' * 30, meeting_id='1', answer='true'),
-        dict(username='qwertQWERTY23456_', meeting_id=1, answer='false'),
-    ])
-    def test_ok(self, form):
-        form = AnswerInvitationModel(**form)
-        assert form.dict() == form
-
-    @pytest.mark.parametrize('form,loc,msg', [
-        (dict(username='', meeting_id=1, answer=True), ('username',), 'ensure this value has at least 2 characters'),
-        (dict(meeting_id=1, answer=True), ('username',), 'field required'),
-        (dict(username='a' * 31, meeting_id=1, answer='true'), ('username',), 'ensure this value has at most 30 characters'),
-        (dict(username='a b', meeting_id=1, answer='true'), ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(username='1a', meeting_id=1, answer='true'), ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(username='aa', meeting_id='ddd', answer='false'), ('meeting_id',), 'value is not a valid integer'),
-        (dict(username='aa', answer='false'), ('meeting_id',), 'field required'),
-        (dict(username='aa', meeting_id=1, answer='scooters'), ('answer',), 'value could not be parsed to a boolean'),
-        (dict(username='aa', meeting_id=1), ('answer',), 'field required'),
-    ])
-    def test_not_ok(self, form, loc, msg):
-        with pytest.raises(ValidationError) as excinfo:
-            AnswerInvitationModel(**form)
-        assert len(excinfo.value.errors()) == 1
-        assert excinfo.value.errors()[0]['loc'] == loc
-        assert excinfo.value.errors()[0]['msg'] == msg
 
 
 class TestAnswerInvitationView:
@@ -82,10 +51,17 @@ class TestAnswerInvitationView:
 
     def test_validates_input(self):
         with patch('app.forms.AnswerInvitationModel', Mock(wraps=AnswerInvitationModel)) as mock:
-            form = dict(foo='bar')
-            self.client.post('/invitations', data=form)
-            assert mock.call_count == 1
-            assert mock.call_args.kwargs == form
+            response = self.client.post('/invitations', data=dict(foo='bar'))
+        assert mock.call_count == 1
+        assert mock.call_args.kwargs == dict(foo='bar')
+        assert response.json == {
+            'status': 'error',
+            'error': {
+                'answer': ['field required'],
+                'meeting_id': ['field required'],
+                'username': ['field required'],
+            },
+        }
 
     def test_nonexistent_meeting(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id=9999))

@@ -3,7 +3,6 @@ from datetime import (
     datetime,
     timezone,
 )
-from pydantic import ValidationError
 
 import pytest
 from unittest.mock import (
@@ -20,50 +19,6 @@ from app.db_actions import (
 )
 from app.exceptions import NotFoundException
 from app.forms import MeetingsModel
-
-
-class TestMeetingsModel:
-    default_args = dict(
-        creator_username='aa',
-        start='2022-06-22T19:00:00+01:00',
-        end='2022-06-22T20:00:00-03:00',
-    )
-
-    @pytest.mark.parametrize('form', [
-        default_args,
-        dict(default_args, creator_username='qwertQWERTY23456_'),
-        dict(default_args, creator_username='a'*30),
-        dict(default_args, start='2022-06-22T19:00:00'),
-        dict(default_args, desc='some description'),
-        dict(default_args, invitees='inv1,inv2,inv3'),
-    ])
-    def test_ok(self, form):
-        form = MeetingsModel(**form)
-        assert form.dict() == form
-
-    @pytest.mark.parametrize('form,loc,msg', [
-        (dict(start='2022-06-22T19:00:00', end='2022-06-22T20:00:00'), ('creator_username',), 'field required'),
-        (dict(default_args, creator_username=''), ('creator_username',), 'ensure this value has at least 2 characters'),
-        (dict(default_args, creator_username='a'), ('creator_username',), 'ensure this value has at least 2 characters'),
-        (dict(default_args, creator_username='a'*31), ('creator_username',), 'ensure this value has at most 30 characters'),
-        (dict(default_args, creator_username='a b'), ('creator_username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(default_args, creator_username='1ab'), ('creator_username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(creator_username='aa', end='2022-06-22T19:00:00'), ('start',), 'field required'),
-        (dict(default_args, start='ab'), ('start',), 'invalid datetime format'),
-        (dict(creator_username='aa', start='2022-06-22T19:00:00'), ('end',), 'field required'),
-        (dict(default_args, end='ab'), ('end',), 'invalid datetime format'),
-        (dict(default_args, start=default_args['end'], end=default_args['start']), ('__root__',), 'end should not be earlier than start'),
-        (dict(default_args, invitees='aa aa'), ('invitees', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(default_args, invitees='aa,1aa'), ('invitees', 1), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(default_args, invitees='1aa'), ('invitees', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(default_args, invitees='a'*31), ('invitees', 0), 'ensure this value has at most 30 characters'),
-    ])
-    def test_not_ok(self, form, loc, msg):
-        with pytest.raises(ValidationError) as excinfo:
-            MeetingsModel(**form)
-        assert len(excinfo.value.errors()) == 1
-        assert excinfo.value.errors()[0]['loc'] == loc
-        assert excinfo.value.errors()[0]['msg'] == msg
 
 
 class TestMeetingsPostView:
@@ -99,10 +54,17 @@ class TestMeetingsPostView:
 
     def test_validates_input(self):
         with patch('app.forms.MeetingsModel', Mock(wraps=MeetingsModel)) as mock:
-            form = dict(foo='bar')
-            self.client.post('/meetings', data=form)
-            assert mock.call_count == 1
-            assert mock.call_args.kwargs == form
+            response = self.client.post('/meetings', data=dict(foo='bar'))
+        assert mock.call_count == 1
+        assert mock.call_args.kwargs == dict(foo='bar')
+        assert response.json == {
+            'status': 'error',
+            'error': {
+                'creator_username': ['field required'],
+                'end': ['field required'],
+                'start': ['field required'],
+            },
+        }
 
     def test_ok_tz_naive_dates_treated_as_utc_dates(self):
         response = self.client.post(
