@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy.exc import IntegrityError
 
+from .database import db
 from .exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
 from .models import (
-    db,
     Invitation,
     Meeting,
     User,

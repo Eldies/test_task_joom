@@ -3,20 +3,23 @@ from datetime import (
     datetime,
     timezone,
 )
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import (
     Column,
     ForeignKey,
+    MetaData,
 )
 from sqlalchemy.types import (
     Boolean,
     Integer,
     String,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (
+    declarative_base,
+    relationship,
+)
 
-db = SQLAlchemy()
-Base = db.Model
+metadata = MetaData()
+Base = declarative_base(metadata=metadata)
 
 
 class User(Base):

@@ -7,8 +7,8 @@ from flask import (
 from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
 
+from .database import db
 from .exceptions import BaseLocalException
-from .models import db
 from . import (
     settings,
     views,
