@@ -5,3 +5,7 @@ class BaseLocalException(Exception):
 
 class NotFoundException(BaseLocalException):
     code: int = 404
+
+
+class AlreadyExistsException(BaseLocalException):
+    code: int = 400

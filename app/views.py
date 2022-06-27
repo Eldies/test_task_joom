@@ -15,18 +15,19 @@ from pydantic import (
     root_validator,
     validator,
 )
-from sqlalchemy.exc import IntegrityError
 from typing import (
     List,
     Optional,
 )
 
-from .db_actions import get_user_by_name
+from .db_actions import (
+    create_user,
+    get_user_by_name,
+)
 from .models import (
     db,
     Invitation,
     Meeting,
-    User,
 )
 
 
@@ -44,13 +45,7 @@ class UsersModel(BaseModel):
 class UsersView(MethodView):
     def post(self):
         form = UsersModel(**request.form)
-
-        try:
-            db.session.add(User(name=form.username))
-            db.session.commit()
-        except IntegrityError:
-            return abort(400, 'user already exists')
-
+        create_user(name=form.username)
         return jsonify(dict(status='ok'))
 
 
