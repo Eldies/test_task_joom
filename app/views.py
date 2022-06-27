@@ -1,22 +1,10 @@
 # -*- coding: utf-8 -*-
-from datetime import (
-    datetime,
-    timezone,
-)
+from datetime import timezone
 from flask import (
     jsonify,
     request, Response,
 )
 from flask.views import MethodView
-from pydantic import (
-    BaseModel,
-    constr,
-    root_validator,
-    validator,
-)
-from typing import (
-    Optional,
-)
 
 from .db_actions import (
     create_meeting,
@@ -25,17 +13,15 @@ from .db_actions import (
     get_user_by_name,
     set_answer_for_invitation,
 )
+from .forms import (
+    AnswerInvitationModel,
+    MeetingsModel,
+    UsersModel,
+)
 
 
 def ping():
     return 'pong'
-
-
-UsernameField = constr(min_length=2, max_length=30, regex='^[a-zA-Z_]\\w*$')
-
-
-class UsersModel(BaseModel):
-    username: UsernameField
 
 
 class UsersView(MethodView):
@@ -43,30 +29,6 @@ class UsersView(MethodView):
         form = UsersModel(**request.form)
         create_user(name=form.username)
         return jsonify(dict(status='ok'))
-
-
-class MeetingsModel(BaseModel):
-    creator_username: UsernameField
-    start: datetime
-    end: datetime
-    description: Optional[str]
-    invitees: Optional[list[UsernameField]]
-
-    @root_validator(skip_on_failure=True)
-    def check_end_is_later_than_start(cls, values: dict) -> dict:
-        if values.get('end') < values.get('start'):
-            raise ValueError('end should not be earlier than start')
-        return values
-
-    @validator('start', 'end')
-    def treat_tz_naive_dates_as_utc(cls, value: datetime) -> datetime:
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value
-
-    @validator('invitees', pre=True)
-    def split_invitees(cls, value: str) -> list[str]:
-        return value.split(',')
 
 
 class MeetingsView(MethodView):
@@ -97,12 +59,6 @@ class MeetingsView(MethodView):
             ],
         )
         return jsonify(dict(status='ok', meeting_description=desc))
-
-
-class AnswerInvitationModel(BaseModel):
-    username: UsernameField
-    meeting_id: int
-    answer: bool
 
 
 class AnswerInvitationView(MethodView):
