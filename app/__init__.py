@@ -2,6 +2,7 @@
 from flask import Flask, jsonify
 from pydantic import ValidationError
 
+from .exceptions import BaseLocalException
 from .models import db
 from . import settings, views
 
@@ -12,6 +13,11 @@ def pydantic_validation_error_handler(error):
 
 def error_handler(error):
     return jsonify(dict(status='error', error=error.description)), error.code
+
+
+def local_exception_handler(error):
+    assert hasattr(error, 'code')
+    return jsonify(dict(status='error', error=error.args[0])), error.code
 
 
 def create_app():
@@ -32,6 +38,7 @@ def create_app():
 
     app.register_error_handler(400, error_handler)
     app.register_error_handler(404, error_handler)
+    app.register_error_handler(BaseLocalException, local_exception_handler)
     app.register_error_handler(ValidationError, pydantic_validation_error_handler)
 
     return app
