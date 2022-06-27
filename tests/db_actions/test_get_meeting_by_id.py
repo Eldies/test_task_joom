@@ -7,7 +7,6 @@ from app.db_actions import (
     create_user,
     create_meeting,
     get_meeting_by_id,
-    get_user_by_name,
 )
 from app.exceptions import NotFoundException
 from app.models import Meeting
@@ -15,9 +14,8 @@ from app.models import Meeting
 
 @pytest.fixture()
 def meeting_id(app: Flask) -> int:
-    create_user('creator')
     meeting = create_meeting(
-        creator=get_user_by_name('creator'),
+        creator=create_user('creator'),
         start=1000,
         end=2000,
         description='DESC',

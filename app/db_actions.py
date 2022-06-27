@@ -52,3 +52,11 @@ def get_meeting_by_id(id: int) -> Meeting:
     if meeting is None:
         raise NotFoundException('Meeting with id "{}" does not exist'.format(id))
     return meeting
+
+
+def set_answer_for_invitation(invitee: User, meeting: Meeting, answer: bool) -> None:
+    invitation = db.session.query(Invitation).filter_by(invitee=invitee, meeting=meeting).first()
+    if invitation is None:
+        raise NotFoundException('User was not invited to this meeting')
+    invitation.answer = answer
+    db.session.commit()

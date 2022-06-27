@@ -70,7 +70,7 @@ class TestAnswerInvitationView:
     def test_nonexistent_meeting(self):
         response = self.client.post('/invitations', data=dict(self.default_args, meeting_id=9999))
         assert response.status_code == 404
-        assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
+        assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
         assert db.session.query(Invitation).filter_by(invitee=self.invited_user, meeting=self.meeting).first().answer is None
 
     def test_not_invited_user(self):

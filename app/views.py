@@ -4,9 +4,8 @@ from datetime import (
     timezone,
 )
 from flask import (
-    abort,
     jsonify,
-    request,
+    request, Response,
 )
 from flask.views import MethodView
 from pydantic import (
@@ -24,10 +23,7 @@ from .db_actions import (
     create_user,
     get_meeting_by_id,
     get_user_by_name,
-)
-from .models import (
-    db,
-    Invitation,
+    set_answer_for_invitation,
 )
 
 
@@ -43,7 +39,7 @@ class UsersModel(BaseModel):
 
 
 class UsersView(MethodView):
-    def post(self):
+    def post(self) -> Response:
         form = UsersModel(**request.form)
         create_user(name=form.username)
         return jsonify(dict(status='ok'))
@@ -57,24 +53,24 @@ class MeetingsModel(BaseModel):
     invitees: Optional[list[UsernameField]]
 
     @root_validator(skip_on_failure=True)
-    def check_end_is_later_than_start(cls, values):
+    def check_end_is_later_than_start(cls, values: dict) -> dict:
         if values.get('end') < values.get('start'):
             raise ValueError('end should not be earlier than start')
         return values
 
     @validator('start', 'end')
-    def treat_tz_naive_dates_as_utc(cls, value):
+    def treat_tz_naive_dates_as_utc(cls, value: datetime) -> datetime:
         if value.tzinfo is None:
             value = value.replace(tzinfo=timezone.utc)
         return value
 
     @validator('invitees', pre=True)
-    def split_invitees(cls, value):
+    def split_invitees(cls, value: str) -> list[str]:
         return value.split(',')
 
 
 class MeetingsView(MethodView):
-    def post(self):
+    def post(self) -> Response:
         form = MeetingsModel(**request.form)
 
         meeting = create_meeting(
@@ -87,7 +83,7 @@ class MeetingsView(MethodView):
 
         return jsonify(dict(status='ok', meeting_id=meeting.id))
 
-    def get(self, meeting_id: int):
+    def get(self, meeting_id: int) -> Response:
         meeting = get_meeting_by_id(id=meeting_id)
         desc = dict(
             id=meeting.id,
@@ -110,14 +106,11 @@ class AnswerInvitationModel(BaseModel):
 
 
 class AnswerInvitationView(MethodView):
-    def post(self):
+    def post(self) -> Response:
         form = AnswerInvitationModel(**request.form)
-
-        user = get_user_by_name(form.username)
-        invitation = db.session.query(Invitation).filter_by(invitee=user, meeting_id=form.meeting_id).first()
-        if invitation is None:
-            abort(404, 'User was not invited to this meeting')
-
-        invitation.answer = form.answer
-        db.session.commit()
+        set_answer_for_invitation(
+            invitee=get_user_by_name(form.username),
+            meeting=get_meeting_by_id(form.meeting_id),
+            answer=form.answer,
+        )
         return jsonify(dict(status='ok'))

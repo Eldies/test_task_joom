@@ -10,17 +10,18 @@ from app import db
 from app.db_actions import (
     create_meeting,
     create_user,
+    get_meeting_by_id,
+    set_answer_for_invitation,
 )
-from app.models import (
-    Invitation,
-    Meeting,
-)
+from app.exceptions import NotFoundException
 
 
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, app):
         create_user(name='creator')
+        create_user(name='invitee1')
+        create_user(name='invitee2')
 
         self.client = app.test_client()
 
@@ -31,12 +32,14 @@ class TestMeetingsPostView:
         )
 
     def test_ok(self):
-        assert db.session.query(Meeting).count() == 0
+        with pytest.raises(NotFoundException):
+            get_meeting_by_id(1)
+
         response = self.client.post('/meetings', data=self.default_args)
+
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        assert db.session.query(Meeting).count() == 1
-        meeting = db.session.query(Meeting).first()
+        meeting = get_meeting_by_id(1)
         assert meeting.id == 1
         assert meeting.creator.name == 'creator'
         assert meeting.start == datetime(2022, 6, 22, 18, 0, tzinfo=timezone.utc).timestamp()
@@ -55,16 +58,14 @@ class TestMeetingsPostView:
         )
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        meeting = db.session.query(Meeting).first()
-        assert meeting.start == int(datetime(2022, 6, 22, 19, 0, tzinfo=timezone.utc).timestamp())
-        assert meeting.end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
+        assert get_meeting_by_id(1).start == int(datetime(2022, 6, 22, 19, 0, tzinfo=timezone.utc).timestamp())
+        assert get_meeting_by_id(1).end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
 
     def test_ok_with_description(self):
         response = self.client.post('/meetings', data=dict(self.default_args, description='desc'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        meeting = db.session.query(Meeting).first()
-        assert meeting.description == 'desc'
+        assert get_meeting_by_id(1).description == 'desc'
 
     @pytest.mark.parametrize('field_name,value,error', [
         ('start', None, 'field required'),
@@ -78,7 +79,6 @@ class TestMeetingsPostView:
         response = self.client.post('/meetings', data=dict(self.default_args, **{field_name: value}))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {field_name: [error]}}
-        assert db.session.query(Meeting).count() == 0
 
     @pytest.mark.parametrize('username,error', [
         (None, 'field required'),
@@ -91,42 +91,32 @@ class TestMeetingsPostView:
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username=username))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'creator_username': [error]}}
-        assert db.session.query(Meeting).count() == 0
 
     def test_nonexistent_username(self):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
-        assert db.session.query(Meeting).count() == 0
 
     def test_end_before_start(self):
         response = self.client.post('/meetings', data=dict(self.default_args, end='2022-06-22T18:00:00+01:00'))
         assert response.status_code == 400
         assert response.json == {'status': 'error', 'error': {'__root__': ['end should not be earlier than start']}}
-        assert db.session.query(Meeting).count() == 0
 
     def test_ok_with_invitees(self):
-        create_user(name='inv1')
-        create_user(name='inv2')
-        response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,invitee2'))
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
-        assert db.session.query(Meeting).count() == 1
-        meeting = db.session.query(Meeting).first()
-        invitations = meeting.invitations
-        assert len(invitations) == 2
-        for invitation in invitations:
+        meeting = get_meeting_by_id(1)
+        assert len(meeting.invitations) == 2
+        for invitation in meeting.invitations:
             assert invitation.meeting_id == meeting.id
-            assert invitation.invitee.name in ('inv1', 'inv2')
+            assert invitation.invitee.name in ('invitee1', 'invitee2')
             assert invitation.answer is None
 
     def test_with_nonexistent_invitee(self):
-        create_user(name='inv1')
-        response = self.client.post('/meetings', data=dict(self.default_args, invitees='inv1,inv2'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,nonexistent_invitee'))
         assert response.status_code == 404
-        assert response.json == {'status': 'error', 'error': 'User "inv2" does not exist'}
-        assert db.session.query(Meeting).count() == 0
-        assert db.session.query(Invitation).count() == 0
+        assert response.json == {'status': 'error', 'error': 'User "nonexistent_invitee" does not exist'}
 
     @pytest.mark.parametrize('invitees', [
         'aa bb',
@@ -141,8 +131,6 @@ class TestMeetingsPostView:
             'status': 'error',
             'error': {'invitees': ['string does not match regex "^[a-zA-Z_]\\w*$"']},
         }
-        assert db.session.query(Meeting).count() == 0
-        assert db.session.query(Invitation).count() == 0
 
 
 class TestMeetingsGetView:
@@ -160,14 +148,11 @@ class TestMeetingsGetView:
             start=int(self.start.timestamp()),
             end=int(self.end.timestamp()),
             description='DESCRIPTION',
-            invitees=[],
+            invitees=[user1, user2, user3],
         )
+        set_answer_for_invitation(user2, meeting, True)
+        set_answer_for_invitation(user3, meeting, False)
 
-        inv1 = Invitation(invitee=user1, meeting=meeting, answer=None)
-        inv2 = Invitation(invitee=user2, meeting=meeting, answer=True)
-        inv3 = Invitation(invitee=user3, meeting=meeting, answer=False)
-        db.session.add_all([inv1, inv2, inv3])
-        db.session.commit()
         self.meeting_id = meeting.id
 
         self.client = app.test_client()
@@ -187,7 +172,7 @@ class TestMeetingsGetView:
                 'invitees': [
                     {'accepted_invitation': None, 'username': 'inv1'},
                     {'accepted_invitation': True, 'username': 'inv2'},
-                    {'accepted_invitation': False,'username': 'inv3'},
+                    {'accepted_invitation': False, 'username': 'inv3'},
                 ],
             },
         }
