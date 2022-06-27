@@ -1,26 +1,33 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify
+from flask import (
+    Flask,
+    jsonify,
+    Response,
+)
 from pydantic import ValidationError
+from werkzeug.exceptions import HTTPException
 
 from .exceptions import BaseLocalException
 from .models import db
-from . import settings, views
+from . import (
+    settings,
+    views,
+)
 
 
-def pydantic_validation_error_handler(error):
+def pydantic_validation_error_handler(error: ValidationError) -> (Response, int):
     return jsonify(dict(status='error', error={err['loc'][0]: [err['msg']] for err in error.errors()})), 400
 
 
-def error_handler(error):
+def error_handler(error: HTTPException) -> (Response, int):
     return jsonify(dict(status='error', error=error.description)), error.code
 
 
-def local_exception_handler(error):
-    assert hasattr(error, 'code')
+def local_exception_handler(error: BaseLocalException) -> (Response, int):
     return jsonify(dict(status='error', error=error.args[0])), error.code
 
 
-def create_app(test_config=None):
+def create_app(test_config: dict = None) -> Flask:
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = settings.SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
