@@ -104,7 +104,10 @@ def get_user_meetings_for_range(user: User, start: int, end: int) -> list[Meetin
     return filtered_meetings.all()
 
 
-def get_all_meetings_for_several_users(users: list[User], start: int) -> list[Meeting]:
+def get_all_meetings_for_several_users(users: list[User], start: int | datetime) -> list[Meeting]:
+    if isinstance(start, datetime):
+        assert start.tzinfo is not None
+        start = int(start.astimezone(tz=timezone.utc).timestamp())
     user_ids = [user.id for user in users]
     m1 = db.session.query(Meeting).join(Meeting.invitations).filter(
         Invitation.invitee_id.in_(user_ids),
@@ -112,5 +115,10 @@ def get_all_meetings_for_several_users(users: list[User], start: int) -> list[Me
     )
     m2 = db.session.query(Meeting).filter(Meeting.creator_id.in_(user_ids))
     all_meetings = m2.union(m1)
-    filtered_meetings = all_meetings.filter(Meeting.end >= start)
+    filtered_meetings = all_meetings.filter(
+        or_(
+            Meeting.end >= start,
+            Meeting.repeat_type != RepeatTypeEnum.none,
+        ),
+    )
     return filtered_meetings.all()

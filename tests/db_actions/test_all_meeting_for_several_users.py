@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from flask import Flask
 import pytest
 
@@ -10,6 +11,7 @@ from app.db_actions import (
     get_user_by_name,
     set_answer_for_invitation,
 )
+from app.logic import RepeatTypeEnum
 
 
 @pytest.fixture(autouse=True)
@@ -124,3 +126,31 @@ def test_user1_first_meeting_already_ended():
     meetings.sort(key=lambda m: m.start)
     assert len(meetings) == 1
     assert meetings[0].start == 2000
+
+
+@pytest.fixture()
+def daily_meeting(app: Flask):
+    return create_meeting(
+        creator=create_user('user55'),
+        start=datetime.fromisoformat('2022-06-22T17:00+00:00'),
+        end=datetime.fromisoformat('2022-06-22T18:00+00:00'),
+        repeat_type=RepeatTypeEnum.daily,
+    )
+
+
+def test_daily_meeting_before_it(daily_meeting):
+    meetings = get_all_meetings_for_several_users(
+        users=[get_user_by_name('user55')],
+        start=datetime.fromisoformat('2022-01-01T00:00+00:00'),
+    )
+    assert len(meetings) == 1
+    assert meetings[0].start_datetime.isoformat() == '2022-06-22T17:00:00+00:00'
+
+
+def test_daily_meeting_after_it(daily_meeting):
+    meetings = get_all_meetings_for_several_users(
+        users=[get_user_by_name('user55')],
+        start=datetime.fromisoformat('2023-01-01T00:00+00:00'),
+    )
+    assert len(meetings) == 1
+    assert meetings[0].start_datetime.isoformat() == '2022-06-22T17:00:00+00:00'
