@@ -8,7 +8,10 @@ from app.db_actions import (
     create_user,
     set_answer_for_invitation,
 )
-from app.logic import make_meeting_description
+from app.logic import (
+    find_first_free_range_among_meetings,
+    make_meeting_description,
+)
 from app.models import Meeting
 
 
@@ -44,3 +47,30 @@ def test_make_meeting_description(meeting: Meeting):
             {'accepted_invitation': False, 'username': 'user3'},
         ],
     }
+
+
+@pytest.fixture()
+def many_meetings(app: Flask):
+    creator = create_user('creator')
+    return [
+        create_meeting(creator=creator, start=1000, end=2000),
+        create_meeting(creator=creator, start=1000, end=4000),
+        create_meeting(creator=creator, start=4500, end=6000),
+        create_meeting(creator=creator, start=7000, end=8000),
+    ]
+
+
+def test_find_first_free_range_among_meetings_has_time_before_first_meeting(many_meetings):
+    assert find_first_free_range_among_meetings(many_meetings, 900, 0) == 0
+
+
+def test_find_first_free_range_among_meetings_has_time_only_after_all_meetings(many_meetings):
+    assert find_first_free_range_among_meetings(many_meetings, 1100, 0) == 8000
+
+
+def test_find_first_free_range_among_meetings(many_meetings):
+    assert find_first_free_range_among_meetings(many_meetings, 900, 600) == 6000
+
+
+def test_find_first_free_range_among_meetings_no_meetings():
+    assert find_first_free_range_among_meetings([], 900, 0) == 0
