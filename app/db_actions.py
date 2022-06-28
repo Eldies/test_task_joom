@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from sqlalchemy import (
+    not_,
+    or_,
+)
 from sqlalchemy.exc import IntegrityError
 
 from .exceptions import (
@@ -30,7 +34,9 @@ def create_user(name: str) -> User:
         raise AlreadyExistsException('user already exists')
 
 
-def create_meeting(creator: User, start: int, end: int, description: str, invitees: list[User]) -> Meeting:
+def create_meeting(creator: User, start: int, end: int, description: str = None, invitees: list[User] = None) -> Meeting:
+    if invitees is None:
+        invitees = []
     meeting = Meeting(
         creator=creator,
         start=start,
@@ -64,3 +70,16 @@ def get_invitation(invitee: User, meeting: Meeting) -> Invitation:
 def set_answer_for_invitation(invitee: User, meeting: Meeting, answer: bool) -> None:
     get_invitation(invitee=invitee, meeting=meeting).answer = answer
     db.session.commit()
+
+
+def get_user_meetings_for_range(user: User, start: int, end: int) -> list[Meeting]:
+    m1 = db.session.query(Meeting).join(Meeting.invitations).filter(Invitation.invitee == user)
+    m2 = db.session.query(Meeting).filter_by(creator=user)
+    all_meetings_of_user = m2.union(m1)
+
+    filtered_meetings = all_meetings_of_user.filter(not_(or_(
+        Meeting.start > end,
+        Meeting.end < start,
+    )))
+
+    return filtered_meetings.all()
