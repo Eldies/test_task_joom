@@ -71,3 +71,21 @@ def test_ok_w_datetimes():
     assert meeting.start_datetime.isoformat() == '2022-06-22T17:00:00+00:00'
     assert meeting.end == 1655935200
     assert meeting.end_datetime.isoformat() == '2022-06-22T22:00:00+00:00'
+
+
+def test_fails_if_start_wo_tz_info():
+    with pytest.raises(AssertionError):
+        create_meeting(
+            creator=get_user_by_name('creator'),
+            start=datetime.fromisoformat('2022-06-22T17:00'),
+            end=2000,
+        )
+
+
+def test_fails_if_end_wo_tz_info():
+    with pytest.raises(AssertionError):
+        create_meeting(
+            creator=get_user_by_name('creator'),
+            start=2000,
+            end=datetime.fromisoformat('2022-06-22T17:00'),
+        )
