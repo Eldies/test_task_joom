@@ -56,3 +56,19 @@ class AnswerInvitationModel(BaseModel):
 
 class UserMeetingsForRangeModel(RangeModel):
     username: UsernameField
+
+
+class FindFreeWindowForUsersModel(BaseModel):
+    usernames: list[UsernameField]
+    window_size: int
+    start: datetime
+
+    @validator('start')
+    def treat_tz_naive_dates_as_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value
+
+    @validator('usernames', pre=True)
+    def split_usernames(cls, value: str) -> list[str]:
+        return value.split(',')

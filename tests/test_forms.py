@@ -5,6 +5,7 @@ import pytest
 
 from app.forms import (
     AnswerInvitationModel,
+    FindFreeWindowForUsersModel,
     MeetingsModel,
     UserMeetingsForRangeModel,
     UsersModel,
@@ -154,4 +155,37 @@ class TestUsersModel:
             UsersModel(**form)
         assert len(excinfo.value.errors()) == 1
         assert excinfo.value.errors()[0]['loc'] == ('username',)
+        assert excinfo.value.errors()[0]['msg'] == msg
+
+
+class TestFindFreeWindowForUsersModel:
+    default_args = dict(
+        usernames='inv1,inv2,inv3',
+        start='2022-06-22T19:00:00+01:00',
+        window_size=1000,
+    )
+
+    @pytest.mark.parametrize('form', [
+        default_args,
+        dict(default_args, start='2022-06-22T19:00'),
+    ])
+    def test_ok(self, form):
+        form = FindFreeWindowForUsersModel(**form)
+        assert form.dict() == form
+
+    @pytest.mark.parametrize('form,loc,msg', [
+        (dict(start='2022-06-22T19:00:00', window_size=1000), ('usernames',), 'field required'),
+        (dict(usernames='inv1,inv2,inv3', window_size=1000), ('start',), 'field required'),
+        (dict(start='2022-06-22T19:00:00', usernames='inv1,inv2,inv3'), ('window_size',), 'field required'),
+        (dict(default_args, start='ab'), ('start',), 'invalid datetime format'),
+        (dict(default_args, usernames='aa aa'), ('usernames', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, usernames='aa,1aa'), ('usernames', 1), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, usernames='1aa'), ('usernames', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, usernames='a'*31), ('usernames', 0), 'ensure this value has at most 30 characters'),
+    ])
+    def test_not_ok(self, form, loc, msg):
+        with pytest.raises(ValidationError) as excinfo:
+            FindFreeWindowForUsersModel(**form)
+        assert len(excinfo.value.errors()) == 1
+        assert excinfo.value.errors()[0]['loc'] == loc
         assert excinfo.value.errors()[0]['msg'] == msg

@@ -19,7 +19,7 @@ def make_meeting_description(meeting: Meeting) -> dict:
     )
 
 
-def find_first_free_range_among_meetings(meetings: list[Meeting], range_size: int, start: int) -> int:
+def find_first_free_window_among_meetings(meetings: list[Meeting], window_size: int, start: int) -> int:
     @dataclass(order=True)
     class PrioritizedItem:
         start: int
@@ -34,13 +34,13 @@ def find_first_free_range_among_meetings(meetings: list[Meeting], range_size: in
         queue.put(PrioritizedItem(meeting.start, meeting.end, meeting))
 
     first_item = queue.get()
-    if first_item.start >= start + range_size:
+    if first_item.start >= start + window_size:
         return start
     busy_until = first_item.end
 
     while not queue.empty():
         item = queue.get()
-        if item.start - busy_until >= range_size:
+        if item.start - busy_until >= window_size:
             return busy_until
         busy_until = max(busy_until, item.end)
 

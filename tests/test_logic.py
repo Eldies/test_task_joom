@@ -9,7 +9,7 @@ from app.db_actions import (
     set_answer_for_invitation,
 )
 from app.logic import (
-    find_first_free_range_among_meetings,
+    find_first_free_window_among_meetings,
     make_meeting_description,
 )
 from app.models import Meeting
@@ -60,17 +60,17 @@ def many_meetings(app: Flask):
     ]
 
 
-def test_find_first_free_range_among_meetings_has_time_before_first_meeting(many_meetings):
-    assert find_first_free_range_among_meetings(many_meetings, 900, 0) == 0
+def test_find_first_free_window_among_meetings_has_time_before_first_meeting(many_meetings):
+    assert find_first_free_window_among_meetings(many_meetings, 900, 0) == 0
 
 
-def test_find_first_free_range_among_meetings_has_time_only_after_all_meetings(many_meetings):
-    assert find_first_free_range_among_meetings(many_meetings, 1100, 0) == 8000
+def test_find_first_free_window_among_meetings_has_time_only_after_all_meetings(many_meetings):
+    assert find_first_free_window_among_meetings(many_meetings, 1100, 0) == 8000
 
 
-def test_find_first_free_range_among_meetings(many_meetings):
-    assert find_first_free_range_among_meetings(many_meetings, 900, 600) == 6000
+def test_find_first_free_window_among_meetings(many_meetings):
+    assert find_first_free_window_among_meetings(many_meetings, 900, 600) == 6000
 
 
-def test_find_first_free_range_among_meetings_no_meetings():
-    assert find_first_free_range_among_meetings([], 900, 0) == 0
+def test_find_first_free_window_among_meetings_no_meetings():
+    assert find_first_free_window_among_meetings([], 900, 0) == 0
