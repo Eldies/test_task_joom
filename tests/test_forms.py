@@ -6,6 +6,7 @@ import pytest
 from app.forms import (
     AnswerInvitationModel,
     MeetingsModel,
+    UserMeetingsForRangeModel,
     UsersModel,
 )
 
@@ -57,6 +58,7 @@ class TestMeetingsModel:
         dict(default_args, creator_username='qwertQWERTY23456_'),
         dict(default_args, creator_username='a'*30),
         dict(default_args, start='2022-06-22T19:00:00'),
+        dict(default_args, end='2022-06-23T19:00'),
         dict(default_args, desc='some description'),
         dict(default_args, invitees='inv1,inv2,inv3'),
     ])
@@ -84,6 +86,45 @@ class TestMeetingsModel:
     def test_not_ok(self, form, loc, msg):
         with pytest.raises(ValidationError) as excinfo:
             MeetingsModel(**form)
+        assert len(excinfo.value.errors()) == 1
+        assert excinfo.value.errors()[0]['loc'] == loc
+        assert excinfo.value.errors()[0]['msg'] == msg
+
+
+class TestUserMeetingsForRangeModel:
+    default_args = dict(
+        username='aa',
+        start='2022-06-22T19:00:00+01:00',
+        end='2022-06-22T20:00:00-03:00',
+    )
+
+    @pytest.mark.parametrize('form', [
+        default_args,
+        dict(default_args, username='qwertQWERTY23456_'),
+        dict(default_args, username='a'*30),
+        dict(default_args, start='2022-06-22T19:00:00'),
+        dict(default_args, end='2022-06-23T19:00'),
+    ])
+    def test_ok(self, form):
+        form = UserMeetingsForRangeModel(**form)
+        assert form.dict() == form
+
+    @pytest.mark.parametrize('form,loc,msg', [
+        (dict(start='2022-06-22T19:00:00', end='2022-06-22T20:00:00'), ('username',), 'field required'),
+        (dict(default_args, username=''), ('username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, username='a'), ('username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, username='a'*31), ('username',), 'ensure this value has at most 30 characters'),
+        (dict(default_args, username='a b'), ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, username='1ab'), ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(username='aa', end='2022-06-22T19:00:00'), ('start',), 'field required'),
+        (dict(default_args, start='ab'), ('start',), 'invalid datetime format'),
+        (dict(username='aa', start='2022-06-22T19:00:00'), ('end',), 'field required'),
+        (dict(default_args, end='ab'), ('end',), 'invalid datetime format'),
+        (dict(default_args, start=default_args['end'], end=default_args['start']), ('__root__',), 'end should not be earlier than start'),
+    ])
+    def test_not_ok(self, form, loc, msg):
+        with pytest.raises(ValidationError) as excinfo:
+            UserMeetingsForRangeModel(**form)
         assert len(excinfo.value.errors()) == 1
         assert excinfo.value.errors()[0]['loc'] == loc
         assert excinfo.value.errors()[0]['msg'] == msg

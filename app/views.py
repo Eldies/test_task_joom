@@ -13,8 +13,10 @@ from .db_actions import (
     create_user,
     get_meeting_by_id,
     get_user_by_name,
+    get_user_meetings_for_range,
     set_answer_for_invitation,
 )
+from .logic import make_meeting_description
 
 
 def ping():
@@ -44,17 +46,7 @@ class MeetingsView(MethodView):
 
     def get(self, meeting_id: int) -> Response:
         meeting = get_meeting_by_id(id=meeting_id)
-        desc = dict(
-            id=meeting.id,
-            description=meeting.description,
-            start_datetime=meeting.start_datetime.isoformat(),
-            end_datetime=meeting.end_datetime.isoformat(),
-            creator=meeting.creator.name,
-            invitees=[
-                dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
-                for invitation in meeting.invitations
-            ],
-        )
+        desc = make_meeting_description(meeting)
         return jsonify(dict(status='ok', meeting_description=desc))
 
 
@@ -67,3 +59,14 @@ class AnswerInvitationView(MethodView):
             answer=form.answer,
         )
         return jsonify(dict(status='ok'))
+
+
+class UserMeetingsForRangeView(MethodView):
+    def get(self, username: str) -> Response:
+        form = forms.UserMeetingsForRangeModel(username=username, **request.args)
+        meetings = get_user_meetings_for_range(
+            user=get_user_by_name(form.username),
+            start=int(form.start.astimezone(tz=timezone.utc).timestamp()),
+            end=int(form.end.astimezone(tz=timezone.utc).timestamp()),
+        )
+        return jsonify(dict(status='ok', meetings=[make_meeting_description(m) for m in meetings]))

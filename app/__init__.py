@@ -41,6 +41,7 @@ def create_app(test_config: dict = None) -> Flask:
 
     app.add_url_rule('/ping', view_func=views.ping, methods=['GET'])
     app.add_url_rule('/users', view_func=views.UsersView.as_view('users'), methods=['POST'])
+    app.add_url_rule('/users/<username>/meetings', view_func=views.UserMeetingsForRangeView.as_view('user_meetings'), methods=['GET'])
     app.add_url_rule('/meetings', view_func=views.MeetingsView.as_view('meetings'), methods=['POST'])
     app.add_url_rule('/meetings/<int:meeting_id>', view_func=views.MeetingsView.as_view('get_meeting'), methods=['GET'])
     app.add_url_rule('/invitations', view_func=views.AnswerInvitationView.as_view('answer_invitations'), methods=['POST'])

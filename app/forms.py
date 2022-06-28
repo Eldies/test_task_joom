@@ -21,12 +21,9 @@ class UsersModel(BaseModel):
     username: UsernameField
 
 
-class MeetingsModel(BaseModel):
-    creator_username: UsernameField
+class RangeModel(BaseModel):
     start: datetime
     end: datetime
-    description: Optional[str]
-    invitees: Optional[list[UsernameField]]
 
     @root_validator(skip_on_failure=True)
     def check_end_is_later_than_start(cls, values: dict) -> dict:
@@ -40,6 +37,12 @@ class MeetingsModel(BaseModel):
             value = value.replace(tzinfo=timezone.utc)
         return value
 
+
+class MeetingsModel(RangeModel):
+    creator_username: UsernameField
+    description: Optional[str]
+    invitees: Optional[list[UsernameField]]
+
     @validator('invitees', pre=True)
     def split_invitees(cls, value: str) -> list[str]:
         return value.split(',')
@@ -49,3 +52,7 @@ class AnswerInvitationModel(BaseModel):
     username: UsernameField
     meeting_id: int
     answer: bool
+
+
+class UserMeetingsForRangeModel(RangeModel):
+    username: UsernameField
