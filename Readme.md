@@ -1,3 +1,16 @@
+## Запуск
+
+### вариант1: docker
+1. установить докер
+2. docker build -t test . && docker run --rm -it test
+
+### вариант2: не докер
+1. python3 -m pip install virtualenv
+2. python3 -m virtualenv venv
+3. source ./venv/bin/activate
+4. pip install -r requirements.txt
+5. flask run --host 0.0.0.0
+
 ## Задание
 
 Написать бэкенд для сервиса Календарь.

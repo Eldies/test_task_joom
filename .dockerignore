@@ -1,0 +1,8 @@
+.git
+.gitignore
+.dockerignore
+venv
+Dockerfile
+.pytest_cache
+coverage_html_report
+tests
