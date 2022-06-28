@@ -59,6 +59,17 @@ def test_ok_w_description_wo_invitees():
     assert len(meeting.invitations) == 0
 
 
+def test_ok_w_repeat_type():
+    meeting = create_meeting(
+        creator=get_user_by_name('creator'),
+        start=1000,
+        end=2000,
+        repeat_type='daily',
+    )
+    assert meeting == db.session.query(Meeting).first()
+    assert meeting.repeat_type == 'daily'
+
+
 def test_ok_w_datetimes():
     meeting = create_meeting(
         creator=get_user_by_name('creator'),

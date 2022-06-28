@@ -43,7 +43,8 @@ def create_meeting(
         start: int | datetime,
         end: int | datetime,
         description: str = None,
-        invitees: list[User] = None
+        invitees: list[User] = None,
+        repeat_type: str = None,
 ) -> Meeting:
     if isinstance(start, datetime):
         assert start.tzinfo is not None
@@ -58,6 +59,7 @@ def create_meeting(
         start=start,
         end=end,
         description=description,
+        repeat_type=repeat_type,
     )
     db.session.add(meeting)
 

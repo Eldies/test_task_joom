@@ -38,6 +38,7 @@ class Meeting(Base):
     creator_id = Column(Integer, ForeignKey("users.id"))
     start = Column(Integer, nullable=False)
     end = Column(Integer, nullable=False)
+    repeat_type = Column(String(20))
     description = Column(String(200))
 
     creator = relationship("User")
