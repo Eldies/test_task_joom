@@ -13,6 +13,8 @@ from typing import (
     Optional,
 )
 
+from .logic import RepeatTypeEnum
+
 
 UsernameField = constr(min_length=2, max_length=30, regex='^[a-zA-Z_]\\w*$')
 
@@ -42,6 +44,7 @@ class MeetingsModel(RangeModel):
     creator_username: UsernameField
     description: Optional[str]
     invitees: Optional[list[UsernameField]]
+    repeat_type: RepeatTypeEnum = RepeatTypeEnum.none
 
     @validator('invitees', pre=True)
     def split_invitees(cls, value: str) -> list[str]:

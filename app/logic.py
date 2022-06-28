@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
+from enum import Enum
 from queue import PriorityQueue
 
 from .models import Meeting
+
+
+class RepeatTypeEnum(str, Enum):
+    none = 'none'
+    daily = 'daily'
+    weekly = 'weekly'
+    every_working_day = 'every_working_day'
+    yearly = 'yearly'
 
 
 def make_meeting_description(meeting: Meeting) -> dict:
@@ -12,6 +21,7 @@ def make_meeting_description(meeting: Meeting) -> dict:
         start_datetime=meeting.start_datetime.isoformat(),
         end_datetime=meeting.end_datetime.isoformat(),
         creator=meeting.creator.name,
+        repeat_type=meeting.repeat_type,
         invitees=[
             dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
             for invitation in meeting.invitations

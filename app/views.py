@@ -46,7 +46,8 @@ class MeetingsView(MethodView):
             start=int(form.start.astimezone(tz=timezone.utc).timestamp()),
             end=int(form.end.astimezone(tz=timezone.utc).timestamp()),
             description=form.description,
-            invitees=[get_user_by_name(name=name) for name in (form.invitees or [])]
+            invitees=[get_user_by_name(name=name) for name in (form.invitees or [])],
+            repeat_type=form.repeat_type,
         )
 
         return jsonify(dict(status='ok', meeting_id=meeting.id))

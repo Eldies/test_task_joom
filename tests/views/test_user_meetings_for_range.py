@@ -63,6 +63,7 @@ class TestUserMeetingsForRangeView:
                     'start_datetime': '2022-06-22T15:00:00+00:00',
                     'end_datetime': '2022-06-22T16:00:00+00:00',
                     'id': 1,
+                    'repeat_type': 'none',
                     'invitees': [
                         {'accepted_invitation': None, 'username': 'user2'},
                         {'accepted_invitation': None, 'username': 'user3'},
@@ -74,6 +75,7 @@ class TestUserMeetingsForRangeView:
                     'start_datetime': '2022-06-22T17:00:00+00:00',
                     'end_datetime': '2022-06-22T18:00:00+00:00',
                     'id': 2,
+                    'repeat_type': 'none',
                     'invitees': [
                         {'accepted_invitation': None, 'username': 'user1'},
                     ],

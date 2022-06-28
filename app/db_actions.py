@@ -13,6 +13,7 @@ from .exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
+from .logic import RepeatTypeEnum
 from .models import (
     db,
     Invitation,
@@ -44,7 +45,7 @@ def create_meeting(
         end: int | datetime,
         description: str = None,
         invitees: list[User] = None,
-        repeat_type: str = None,
+        repeat_type: RepeatTypeEnum = RepeatTypeEnum.none,
 ) -> Meeting:
     if isinstance(start, datetime):
         assert start.tzinfo is not None

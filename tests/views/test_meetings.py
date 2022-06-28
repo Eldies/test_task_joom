@@ -51,6 +51,7 @@ class TestMeetingsPostView:
         assert meeting.end == datetime(2022, 6, 22, 23, 0, tzinfo=timezone.utc).timestamp()
         assert meeting.description is None
         assert meeting.invitations == []
+        assert meeting.repeat_type == 'none'
 
     def test_validates_input(self):
         with patch('app.forms.MeetingsModel', Mock(wraps=MeetingsModel)) as mock:
@@ -85,6 +86,12 @@ class TestMeetingsPostView:
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         assert get_meeting_by_id(1).description == 'desc'
+
+    def test_ok_with_repeat_type(self):
+        response = self.client.post('/meetings', data=dict(self.default_args, repeat_type='daily'))
+        assert response.status_code == 200
+        assert response.json == {'status': 'ok', 'meeting_id': 1}
+        assert get_meeting_by_id(1).repeat_type == 'daily'
 
     def test_nonexistent_username(self):
         response = self.client.post('/meetings', data=dict(self.default_args, creator_username='FOO'))
@@ -144,6 +151,7 @@ class TestMeetingsGetView:
                 'description': 'DESCRIPTION',
                 'start_datetime': self.start.isoformat(),
                 'end_datetime': self.end.isoformat(),
+                'repeat_type': 'none',
                 'invitees': [
                     {'accepted_invitation': None, 'username': 'inv1'},
                     {'accepted_invitation': True, 'username': 'inv2'},

@@ -9,6 +9,7 @@ from app.db_actions import (
     create_meeting,
     get_user_by_name,
 )
+from app.logic import RepeatTypeEnum
 from app.models import (
     Invitation,
     Meeting,
@@ -64,7 +65,7 @@ def test_ok_w_repeat_type():
         creator=get_user_by_name('creator'),
         start=1000,
         end=2000,
-        repeat_type='daily',
+        repeat_type=RepeatTypeEnum.daily,
     )
     assert meeting == db.session.query(Meeting).first()
     assert meeting.repeat_type == 'daily'

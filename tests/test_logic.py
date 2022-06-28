@@ -41,6 +41,7 @@ def test_make_meeting_description(meeting: Meeting):
         'description': 'DESCRIPTION',
         'start_datetime': meeting.start_datetime.isoformat(),
         'end_datetime': meeting.end_datetime.isoformat(),
+        'repeat_type': 'none',
         'invitees': [
             {'accepted_invitation': None, 'username': 'user1'},
             {'accepted_invitation': True, 'username': 'user2'},
