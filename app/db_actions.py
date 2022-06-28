@@ -85,9 +85,13 @@ def get_user_meetings_for_range(user: User, start: int, end: int) -> list[Meetin
     return filtered_meetings.all()
 
 
-def get_all_meetings_for_several_users(users: list[User]) -> list[Meeting]:
+def get_all_meetings_for_several_users(users: list[User], start: int) -> list[Meeting]:
     user_ids = [user.id for user in users]
-    m1 = db.session.query(Meeting).join(Meeting.invitations).filter(Invitation.invitee_id.in_(user_ids))
+    m1 = db.session.query(Meeting).join(Meeting.invitations).filter(
+        Invitation.invitee_id.in_(user_ids),
+        Invitation.answer.is_not(False),  # maybe there should be .is(True) instead
+    )
     m2 = db.session.query(Meeting).filter(Meeting.creator_id.in_(user_ids))
     all_meetings = m2.union(m1)
-    return all_meetings.all()
+    filtered_meetings = all_meetings.filter(Meeting.end >= start)
+    return filtered_meetings.all()
