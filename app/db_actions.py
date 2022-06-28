@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from datetime import (
+    datetime,
+    timezone,
+)
 from sqlalchemy import (
     not_,
     or_,
@@ -34,7 +38,19 @@ def create_user(name: str) -> User:
         raise AlreadyExistsException('user already exists')
 
 
-def create_meeting(creator: User, start: int, end: int, description: str = None, invitees: list[User] = None) -> Meeting:
+def create_meeting(
+        creator: User,
+        start: int | datetime,
+        end: int | datetime,
+        description: str = None,
+        invitees: list[User] = None
+) -> Meeting:
+    if isinstance(start, datetime):
+        assert start.tzinfo is not None
+        start = int(start.astimezone(tz=timezone.utc).timestamp())
+    if isinstance(end, datetime):
+        assert end.tzinfo is not None
+        end = int(end.astimezone(tz=timezone.utc).timestamp())
     if invitees is None:
         invitees = []
     meeting = Meeting(

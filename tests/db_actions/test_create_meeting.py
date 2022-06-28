@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from flask import Flask
 import pytest
 
@@ -56,3 +57,17 @@ def test_ok_w_description_wo_invitees():
     assert meeting == db.session.query(Meeting).first()
     assert meeting.description == 'DESC'
     assert len(meeting.invitations) == 0
+
+
+def test_ok_w_datetimes():
+    meeting = create_meeting(
+        creator=get_user_by_name('creator'),
+        start=datetime.fromisoformat('2022-06-22T17:00+00:00'),
+        end=datetime.fromisoformat('2022-06-22T18:00-04:00'),
+    )
+    assert meeting == db.session.query(Meeting).first()
+    assert len(meeting.invitations) == 0
+    assert meeting.start == 1655917200
+    assert meeting.start_datetime.isoformat() == '2022-06-22T17:00:00+00:00'
+    assert meeting.end == 1655935200
+    assert meeting.end_datetime.isoformat() == '2022-06-22T22:00:00+00:00'
