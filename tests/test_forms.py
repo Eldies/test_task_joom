@@ -25,8 +25,7 @@ class TestAnswerInvitationModel:
         dict(username='qwertQWERTY23456_', meeting_id=1, answer='false'),
     ])
     def test_ok(self, form):
-        form = AnswerInvitationModel(**form)
-        assert form.dict() == form
+        AnswerInvitationModel(**form)
 
     @pytest.mark.parametrize('form,loc,msg', [
         (dict(default_args, username=''), ('username',), 'ensure this value has at least 2 characters'),
@@ -69,8 +68,7 @@ class TestMeetingsModel:
         dict(default_args, repeat_type='every_working_day'),
     ])
     def test_ok(self, form):
-        form = MeetingsModel(**form)
-        assert form.dict() == form
+        MeetingsModel(**form)
 
     @pytest.mark.parametrize('form,loc,msg', [
         (dict(start='2022-06-22T19:00:00', end='2022-06-22T20:00:00'), ('creator_username',), 'field required'),
@@ -113,8 +111,7 @@ class TestUserMeetingsForRangeModel:
         dict(default_args, end='2022-06-23T19:00'),
     ])
     def test_ok(self, form):
-        form = UserMeetingsForRangeModel(**form)
-        assert form.dict() == form
+        UserMeetingsForRangeModel(**form)
 
     @pytest.mark.parametrize('form,loc,msg', [
         (dict(start='2022-06-22T19:00:00', end='2022-06-22T20:00:00'), ('username',), 'field required'),
@@ -151,8 +148,7 @@ class TestUsersModel:
         dict(default_args, password='qwertQWERTY23456_'),
     ])
     def test_ok(self, form):
-        form = UsersModel(**form)
-        assert form.dict() == form
+        UsersModel(**form)
 
     @pytest.mark.parametrize('form,loc,msg', [
         (dict(password='password'), ('username',), 'field required'),
@@ -185,8 +181,7 @@ class TestFindFreeWindowForUsersModel:
         dict(default_args, start='2022-06-22T19:00'),
     ])
     def test_ok(self, form):
-        form = FindFreeWindowForUsersModel(**form)
-        assert form.dict() == form
+        FindFreeWindowForUsersModel(**form)
 
     @pytest.mark.parametrize('form,loc,msg', [
         (dict(start='2022-06-22T19:00:00', window_size=1000), ('usernames',), 'field required'),
