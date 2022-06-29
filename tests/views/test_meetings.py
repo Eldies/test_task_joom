@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 from datetime import (
     datetime,
     timezone,
@@ -19,12 +20,13 @@ from app.db_actions import (
 )
 from app.exceptions import NotFoundException
 from app.forms import MeetingsModel
+from app.models import User
 
 
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, client):
-        create_user(name='creator', password='')
+        creator = create_user(name='creator', password='foo')
         create_user(name='invitee1', password='')
         create_user(name='invitee2', password='')
 
@@ -35,12 +37,26 @@ class TestMeetingsPostView:
             start='2022-06-22T19:00:00+01:00',
             end='2022-06-22T20:00:00-03:00',
         )
+        self.headers = self.make_headers(creator)
+
+    def make_auth_header(self, username, password):
+        return 'Basic {}'.format(
+            base64.encodebytes('{}:{}'.format(
+                username,
+                password,
+            ).encode()).decode().strip()
+        )
+
+    def make_headers(self, auth_user: User):
+        return {
+            'Authorization': self.make_auth_header(auth_user.name, auth_user.password)
+        }
 
     def test_ok(self):
         with pytest.raises(NotFoundException):
             get_meeting_by_id(1)
 
-        response = self.client.post('/meetings', data=self.default_args)
+        response = self.client.post('/meetings', data=self.default_args, headers=self.headers)
 
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
@@ -52,6 +68,24 @@ class TestMeetingsPostView:
         assert meeting.description is None
         assert meeting.invitations == []
         assert meeting.repeat_type == 'none'
+
+    def test_not_authenticated(self):
+        response = self.client.post('/meetings', data=self.default_args)
+        assert response.status_code == 401
+        assert response.json == {'status': 'error', 'error': 'Not authenticated'}
+
+    def test_authenticated_as_wrong_user(self):
+        wrong_user = create_user('wrong_user', 'bar')
+        response = self.client.post('/meetings', data=self.default_args, headers=self.make_headers(wrong_user))
+        assert response.status_code == 403
+        assert response.json == {'status': 'error', 'error': 'Wrong user'}
+
+    def test_authenticated_with_wrong_password(self):
+        response = self.client.post('/meetings', data=self.default_args, headers={
+            'Authorization': self.make_auth_header('creator', 'some_random_string')
+        })
+        assert response.status_code == 403
+        assert response.json == {'status': 'error', 'error': 'Wrong password'}
 
     def test_validates_input(self):
         with patch('app.forms.MeetingsModel', Mock(wraps=MeetingsModel)) as mock:
@@ -75,6 +109,7 @@ class TestMeetingsPostView:
                 start='2022-06-22T19:00:00',
                 end='2022-06-22T20:00:00',
             ),
+            headers=self.headers,
         )
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
@@ -82,13 +117,13 @@ class TestMeetingsPostView:
         assert get_meeting_by_id(1).end == int(datetime(2022, 6, 22, 20, 0, tzinfo=timezone.utc).timestamp())
 
     def test_ok_with_description(self):
-        response = self.client.post('/meetings', data=dict(self.default_args, description='desc'))
+        response = self.client.post('/meetings', data=dict(self.default_args, description='desc'), headers=self.headers)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         assert get_meeting_by_id(1).description == 'desc'
 
     def test_ok_with_repeat_type(self):
-        response = self.client.post('/meetings', data=dict(self.default_args, repeat_type='daily'))
+        response = self.client.post('/meetings', data=dict(self.default_args, repeat_type='daily'), headers=self.headers)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         assert get_meeting_by_id(1).repeat_type == 'daily'
@@ -99,7 +134,7 @@ class TestMeetingsPostView:
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
 
     def test_ok_with_invitees(self):
-        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,invitee2'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,invitee2'), headers=self.headers)
         assert response.status_code == 200
         assert response.json == {'status': 'ok', 'meeting_id': 1}
         meeting = get_meeting_by_id(1)
@@ -110,7 +145,7 @@ class TestMeetingsPostView:
             assert invitation.answer is None
 
     def test_with_nonexistent_invitee(self):
-        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,nonexistent_invitee'))
+        response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,nonexistent_invitee'), headers=self.headers)
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "nonexistent_invitee" does not exist'}
 

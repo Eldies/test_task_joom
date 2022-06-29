@@ -48,6 +48,8 @@ def create_app(test_config: dict = None) -> Flask:
     app.add_url_rule('/find_free_window_for_users', view_func=views.FindFreeWindowForUsersView.as_view('find_free_window'), methods=['GET'])
 
     app.register_error_handler(400, error_handler)
+    app.register_error_handler(401, error_handler)
+    app.register_error_handler(403, error_handler)
     app.register_error_handler(404, error_handler)
     app.register_error_handler(BaseLocalException, local_exception_handler)
     app.register_error_handler(ValidationError, pydantic_validation_error_handler)

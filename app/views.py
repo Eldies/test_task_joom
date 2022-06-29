@@ -25,10 +25,29 @@ from .logic import (
     find_first_free_window_among_meetings,
     make_meeting_description,
 )
+from .models import User
 
 
 def ping():
     return 'pong'
+
+
+class AuthenticationMixin:
+    def get_authenticated_user(self) -> User | None:
+        auth_info = request.authorization
+        if auth_info is None:
+            return None
+        user = get_user_by_name(auth_info.username)
+        if auth_info['password'] != user.password:
+            abort(403, 'Wrong password')
+        return user
+
+    def assert_user_is_authenticated(self, user: User) -> None:
+        auth_user = self.get_authenticated_user()
+        if auth_user is None:
+            abort(401, 'Not authenticated')
+        if user != auth_user:
+            abort(403, 'Wrong user')
 
 
 class UsersView(MethodView):
@@ -38,12 +57,14 @@ class UsersView(MethodView):
         return jsonify(dict(status='ok'))
 
 
-class MeetingsView(MethodView):
+class MeetingsView(MethodView, AuthenticationMixin):
     def post(self) -> Response:
         form = forms.MeetingsModel(**request.form)
 
+        creator = get_user_by_name(form.creator_username)
+        self.assert_user_is_authenticated(creator)
         meeting = create_meeting(
-            creator=get_user_by_name(form.creator_username),
+            creator=creator,
             start=int(form.start.astimezone(tz=timezone.utc).timestamp()),
             end=int(form.end.astimezone(tz=timezone.utc).timestamp()),
             description=form.description,
@@ -59,11 +80,13 @@ class MeetingsView(MethodView):
         return jsonify(dict(status='ok', meeting_description=desc))
 
 
-class AnswerInvitationView(MethodView):
+class AnswerInvitationView(MethodView, AuthenticationMixin):
     def post(self) -> Response:
         form = forms.AnswerInvitationModel(**request.form)
+        user = get_user_by_name(form.username)
+        self.assert_user_is_authenticated(user)
         set_answer_for_invitation(
-            invitee=get_user_by_name(form.username),
+            invitee=user,
             meeting=get_meeting_by_id(form.meeting_id),
             answer=form.answer,
         )

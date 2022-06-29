@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import pytest
 from unittest.mock import (
     Mock,
@@ -12,6 +13,7 @@ from app.db_actions import (
     get_invitation,
 )
 from app.forms import AnswerInvitationModel
+from app.models import User
 
 
 class TestAnswerInvitationView:
@@ -38,13 +40,59 @@ class TestAnswerInvitationView:
 
         self.client = client
 
+    def make_auth_header(self, username, password):
+        return 'Basic {}'.format(
+            base64.encodebytes('{}:{}'.format(
+                username,
+                password,
+            ).encode()).decode().strip()
+        )
+
+    def make_headers(self, auth_user: User):
+        return {
+            'Authorization': self.make_auth_header(auth_user.name, auth_user.password)
+        }
+
+    def test_not_authenticated(self):
+        response = self.client.post(
+            '/invitations',
+            data=self.default_args,
+        )
+        assert response.status_code == 401
+        assert response.json == {'status': 'error', 'error': 'Not authenticated'}
+
+    def test_authenticated_as_wrong_user(self):
+        wrong_user = create_user('wrong_user', 'bar')
+        response = self.client.post(
+            '/invitations',
+            data=self.default_args,
+            headers=self.make_headers(wrong_user),
+        )
+        assert response.status_code == 403
+        assert response.json == {'status': 'error', 'error': 'Wrong user'}
+
+    def test_authenticated_with_wrong_password(self):
+        response = self.client.post(
+            '/invitations',
+            data=self.default_args,
+            headers={
+                'Authorization': self.make_auth_header('user1', 'some_random_string'),
+            },
+        )
+        assert response.status_code == 403
+        assert response.json == {'status': 'error', 'error': 'Wrong password'}
+
     @pytest.mark.parametrize('answer', [
         True,
         False,
     ])
     def test_ok(self, answer):
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
-        response = self.client.post('/invitations', data=dict(self.default_args, answer='true' if answer else 'false'))
+        response = self.client.post(
+            '/invitations',
+            data=dict(self.default_args, answer='true' if answer else 'false'),
+            headers=self.make_headers(self.invited_user),
+        )
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer == answer
@@ -64,13 +112,21 @@ class TestAnswerInvitationView:
         }
 
     def test_nonexistent_meeting(self):
-        response = self.client.post('/invitations', data=dict(self.default_args, meeting_id=9999))
+        response = self.client.post(
+            '/invitations',
+            data=dict(self.default_args, meeting_id=9999),
+            headers=self.make_headers(self.invited_user),
+        )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_not_invited_user(self):
-        response = self.client.post('/invitations', data=dict(self.default_args, username=self.not_invited_user.name))
+        response = self.client.post(
+            '/invitations',
+            data=dict(self.default_args, username=self.not_invited_user.name),
+            headers=self.make_headers(self.not_invited_user),
+        )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
