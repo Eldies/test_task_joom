@@ -13,8 +13,7 @@ from typing import (
     Optional,
 )
 
-from .logic import RepeatTypeEnum
-
+from .types import RepeatTypeEnum
 
 UsernameField = constr(min_length=2, max_length=30, regex='^[a-zA-Z_]\\w*$')
 

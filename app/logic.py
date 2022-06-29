@@ -1,26 +1,21 @@
 # -*- coding: utf-8 -*-
-from dataclasses import dataclass, field
+from dataclasses import (
+    dataclass,
+    field,
+)
 from datetime import (
     datetime,
     timedelta,
     timezone,
 )
-from enum import Enum
 from queue import PriorityQueue
 
+from .db_actions import get_all_meetings_for_several_users
 from .models import (
     Meeting,
     User,
 )
-
-
-class RepeatTypeEnum(str, Enum):
-    none = 'none'
-    daily = 'daily'
-    weekly = 'weekly'
-    every_working_day = 'every_working_day'
-    yearly = 'yearly'
-    monthly = 'monthly'
+from .types import RepeatTypeEnum
 
 
 def get_repeated_timestamp(timestamp: int, repeat_type: RepeatTypeEnum):
@@ -77,7 +72,11 @@ def make_meeting_description(meeting: Meeting, requester: User = None) -> dict:
     return details
 
 
-def find_first_free_window_among_meetings(meetings: list[Meeting], window_size: int, start: int | datetime) -> int | None:
+def find_first_free_window_among_meetings(
+        meetings: list[Meeting],
+        window_size: int,
+        start: int | datetime,
+) -> int | None:
     if isinstance(start, datetime):
         assert start.tzinfo is not None
         start = int(start.astimezone(tz=timezone.utc).timestamp())
@@ -87,9 +86,6 @@ def find_first_free_window_among_meetings(meetings: list[Meeting], window_size: 
         start: int
         end: int
         meeting: Meeting = field(compare=False)
-
-    if len(meetings) == 0:
-        return start
 
     queue = PriorityQueue()
     for meeting in meetings:
@@ -112,3 +108,29 @@ def find_first_free_window_among_meetings(meetings: list[Meeting], window_size: 
             queue.put(PrioritizedItem(new_start, new_end, item.meeting))
 
     return busy_until
+
+
+def get_user_meetings_for_range(
+        user: User,
+        start: int | datetime,
+        end: int | datetime,
+) -> list[Meeting]:
+    if isinstance(start, datetime):
+        assert start.tzinfo is not None
+        start = int(start.astimezone(tz=timezone.utc).timestamp())
+    if isinstance(end, datetime):
+        assert end.tzinfo is not None
+        end = int(end.astimezone(tz=timezone.utc).timestamp())
+
+    meetings = get_all_meetings_for_several_users([user], start)
+    meetings = list(filter(lambda m: not (m.end < start or m.start > end), meetings))
+
+    return meetings
+
+
+"""
+    filtered_meetings = all_meetings_of_user.filter(not_(or_(
+        Meeting.start > end,
+        Meeting.end < start,
+    )))
+    """

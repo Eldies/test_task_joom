@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from app.logic import (
-    get_repeated_timestamp,
-    RepeatTypeEnum,
-)
+from app.logic import get_repeated_timestamp
+from app.types import RepeatTypeEnum
 
 
 def test_get_repeated_timestamp():

@@ -18,11 +18,11 @@ from .db_actions import (
     get_all_meetings_for_several_users,
     get_meeting_by_id,
     get_user_by_name,
-    get_user_meetings_for_range,
     set_answer_for_invitation,
 )
 from .logic import (
     find_first_free_window_among_meetings,
+    get_user_meetings_for_range,
     make_meeting_description,
 )
 from .models import User

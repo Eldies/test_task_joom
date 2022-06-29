@@ -13,7 +13,7 @@ from app.db_actions import (
     create_user,
 )
 from app.forms import FindFreeWindowForUsersModel
-from app.logic import RepeatTypeEnum
+from app.types import RepeatTypeEnum
 
 
 @pytest.fixture(autouse=True)

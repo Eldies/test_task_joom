@@ -11,7 +11,7 @@ from app.db_actions import (
     get_user_by_name,
     set_answer_for_invitation,
 )
-from app.logic import RepeatTypeEnum
+from app.types import RepeatTypeEnum
 
 
 @pytest.fixture(autouse=True)

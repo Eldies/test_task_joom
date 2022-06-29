@@ -11,10 +11,8 @@ from app.db_actions import (
     create_meeting,
     create_user,
 )
-from app.logic import (
-    find_first_free_window_among_meetings,
-    RepeatTypeEnum,
-)
+from app.logic import find_first_free_window_among_meetings
+from app.types import RepeatTypeEnum
 
 
 @pytest.fixture()

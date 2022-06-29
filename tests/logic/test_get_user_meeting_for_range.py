@@ -6,11 +6,11 @@ from app.db_actions import (
     create_user,
     create_meeting,
     get_user_by_name,
-    get_user_meetings_for_range,
 )
+from app.logic import get_user_meetings_for_range
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def prepare(app: Flask):
     user1 = create_user('user1', password='')
     user2 = create_user('user2', password='')
@@ -36,7 +36,7 @@ def prepare(app: Flask):
     )
 
 
-def test_all():
+def test_all(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=0, end=5000)
     meetings.sort(key=lambda m: m.start)
     assert len(meetings) == 2
@@ -44,23 +44,23 @@ def test_all():
     assert meetings[1].start == 2000
 
 
-def test_only_first():
+def test_only_first(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=0, end=1500)
     assert len(meetings) == 1
     assert meetings[0].start == 1000
 
 
-def test_only_second():
+def test_only_second(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=2500, end=5000)
     assert len(meetings) == 1
     assert meetings[0].start == 2000
 
 
-def test_range_is_before_meetings():
+def test_range_is_before_meetings(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=0, end=500)
     assert len(meetings) == 0
 
 
-def test_range_is_after_meetings():
+def test_range_is_after_meetings(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=4500, end=5000)
     assert len(meetings) == 0

@@ -9,7 +9,7 @@ from app.db_actions import (
     create_meeting,
     get_user_by_name,
 )
-from app.logic import RepeatTypeEnum
+from app.types import RepeatTypeEnum
 from app.models import (
     Invitation,
     Meeting,

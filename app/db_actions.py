@@ -4,7 +4,6 @@ from datetime import (
     timezone,
 )
 from sqlalchemy import (
-    not_,
     or_,
 )
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +12,7 @@ from .exceptions import (
     AlreadyExistsException,
     NotFoundException,
 )
-from .logic import RepeatTypeEnum
+from .types import RepeatTypeEnum
 from .models import (
     db,
     Invitation,
@@ -91,19 +90,6 @@ def get_invitation(invitee: User, meeting: Meeting) -> Invitation:
 def set_answer_for_invitation(invitee: User, meeting: Meeting, answer: bool) -> None:
     get_invitation(invitee=invitee, meeting=meeting).answer = answer
     db.session.commit()
-
-
-def get_user_meetings_for_range(user: User, start: int, end: int) -> list[Meeting]:
-    m1 = db.session.query(Meeting).join(Meeting.invitations).filter(Invitation.invitee == user)
-    m2 = db.session.query(Meeting).filter_by(creator=user)
-    all_meetings_of_user = m2.union(m1)
-
-    filtered_meetings = all_meetings_of_user.filter(not_(or_(
-        Meeting.start > end,
-        Meeting.end < start,
-    )))
-
-    return filtered_meetings.all()
 
 
 def get_all_meetings_for_several_users(users: list[User], start: int | datetime) -> list[Meeting]:
