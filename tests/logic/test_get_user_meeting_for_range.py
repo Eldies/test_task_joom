@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 from flask import Flask
 import pytest
 
@@ -8,6 +10,7 @@ from app.db_actions import (
     get_user_by_name,
 )
 from app.logic import get_user_meetings_for_range
+from app.types import RepeatTypeEnum
 
 
 @pytest.fixture()
@@ -64,3 +67,37 @@ def test_range_is_before_meetings(prepare):
 def test_range_is_after_meetings(prepare):
     meetings = get_user_meetings_for_range(user=get_user_by_name('user1'), start=4500, end=5000)
     assert len(meetings) == 0
+
+
+@pytest.fixture()
+def repeating_meeting(app: Flask):
+    user1 = create_user('user1', password='')
+    user2 = create_user('user2', password='')
+    user3 = create_user('user3', password='')
+
+    create_meeting(
+        creator=user1,
+        start=datetime.fromisoformat('2022-01-01T17:00+00:00'),
+        end=datetime.fromisoformat('2022-01-01T18:00+00:00'),
+        invitees=[user2, user3],
+        repeat_type=RepeatTypeEnum.daily,
+    )
+
+
+def test_repeating_meeting(repeating_meeting):
+    meetings = get_user_meetings_for_range(
+        user=get_user_by_name('user1'),
+        start=datetime.fromisoformat('2022-06-22T10:00+00:00'),
+        end=datetime.fromisoformat('2022-06-25T10:00+00:00'),
+    )
+    meetings.sort(key=lambda m: m.start)
+    assert len(meetings) == 3
+    assert meetings[0].id == 1
+    assert meetings[0].start_datetime.isoformat() == '2022-06-22T17:00:00+00:00'
+    assert meetings[0].end_datetime.isoformat() == '2022-06-22T18:00:00+00:00'
+    assert meetings[1].id == 1
+    assert meetings[1].start_datetime.isoformat() == '2022-06-23T17:00:00+00:00'
+    assert meetings[1].end_datetime.isoformat() == '2022-06-23T18:00:00+00:00'
+    assert meetings[2].id == 1
+    assert meetings[2].start_datetime.isoformat() == '2022-06-24T17:00:00+00:00'
+    assert meetings[2].end_datetime.isoformat() == '2022-06-24T18:00:00+00:00'
