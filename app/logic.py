@@ -8,7 +8,10 @@ from datetime import (
 from enum import Enum
 from queue import PriorityQueue
 
-from .models import Meeting
+from .models import (
+    Meeting,
+    User,
+)
 
 
 class RepeatTypeEnum(str, Enum):
@@ -42,19 +45,36 @@ def get_repeated_timestamp(timestamp: int, repeat_type: RepeatTypeEnum):
     assert False
 
 
-def make_meeting_description(meeting: Meeting) -> dict:
-    return dict(
+def make_meeting_description(meeting: Meeting, requester: User = None) -> dict:
+    if meeting.is_private:
+        if requester is not None:
+            people_who_has_rights = [
+                invitation.invitee for invitation in meeting.invitations
+            ] + [meeting.creator]
+            show_full = requester in people_who_has_rights
+        else:
+            show_full = False
+    else:
+        show_full = True
+
+    details = dict(
         id=meeting.id,
-        description=meeting.description,
         start_datetime=meeting.start_datetime.isoformat(),
         end_datetime=meeting.end_datetime.isoformat(),
-        creator=meeting.creator.name,
-        repeat_type=meeting.repeat_type,
-        invitees=[
-            dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
-            for invitation in meeting.invitations
-        ],
     )
+    if show_full:
+        details = dict(
+            details,
+            description=meeting.description,
+            creator=meeting.creator.name,
+            repeat_type=meeting.repeat_type,
+            invitees=[
+                dict(username=invitation.invitee.name, accepted_invitation=invitation.answer)
+                for invitation in meeting.invitations
+            ],
+            is_private=meeting.is_private,
+        )
+    return details
 
 
 def find_first_free_window_among_meetings(meetings: list[Meeting], window_size: int, start: int | datetime) -> int | None:

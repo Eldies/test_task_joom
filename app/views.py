@@ -77,7 +77,7 @@ class MeetingsView(MethodView, AuthenticationMixin):
 
     def get(self, meeting_id: int) -> Response:
         meeting = get_meeting_by_id(id=meeting_id)
-        desc = make_meeting_description(meeting)
+        desc = make_meeting_description(meeting, requester=self.get_authenticated_user())
         return jsonify(dict(status='ok', meeting_description=desc))
 
 
@@ -94,7 +94,7 @@ class AnswerInvitationView(MethodView, AuthenticationMixin):
         return jsonify(dict(status='ok'))
 
 
-class UserMeetingsForRangeView(MethodView):
+class UserMeetingsForRangeView(MethodView, AuthenticationMixin):
     def get(self, username: str) -> Response:
         form = forms.UserMeetingsForRangeModel(username=username, **request.args)
         meetings = get_user_meetings_for_range(
@@ -102,7 +102,13 @@ class UserMeetingsForRangeView(MethodView):
             start=int(form.start.astimezone(tz=timezone.utc).timestamp()),
             end=int(form.end.astimezone(tz=timezone.utc).timestamp()),
         )
-        return jsonify(dict(status='ok', meetings=[make_meeting_description(m) for m in meetings]))
+        return jsonify(dict(
+            status='ok',
+            meetings=[
+                make_meeting_description(m, requester=self.get_authenticated_user())
+                for m in meetings
+            ]
+        ))
 
 
 class FindFreeWindowForUsersView(MethodView):

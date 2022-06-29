@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
 from datetime import (
     datetime,
     timezone,
@@ -20,7 +19,11 @@ from app.db_actions import (
 )
 from app.exceptions import NotFoundException
 from app.forms import MeetingsModel
-from app.models import User
+
+from tests.utils import (
+    make_auth_header,
+    make_headers,
+)
 
 
 class TestMeetingsPostView:
@@ -37,20 +40,7 @@ class TestMeetingsPostView:
             start='2022-06-22T19:00:00+01:00',
             end='2022-06-22T20:00:00-03:00',
         )
-        self.headers = self.make_headers(creator)
-
-    def make_auth_header(self, username, password):
-        return 'Basic {}'.format(
-            base64.encodebytes('{}:{}'.format(
-                username,
-                password,
-            ).encode()).decode().strip()
-        )
-
-    def make_headers(self, auth_user: User):
-        return {
-            'Authorization': self.make_auth_header(auth_user.name, auth_user.password)
-        }
+        self.headers = make_headers(creator)
 
     def test_ok(self):
         with pytest.raises(NotFoundException):
@@ -77,13 +67,13 @@ class TestMeetingsPostView:
 
     def test_authenticated_as_wrong_user(self):
         wrong_user = create_user('wrong_user', 'bar')
-        response = self.client.post('/meetings', data=self.default_args, headers=self.make_headers(wrong_user))
+        response = self.client.post('/meetings', data=self.default_args, headers=make_headers(wrong_user))
         assert response.status_code == 403
         assert response.json == {'status': 'error', 'error': 'Wrong user'}
 
     def test_authenticated_with_wrong_password(self):
         response = self.client.post('/meetings', data=self.default_args, headers={
-            'Authorization': self.make_auth_header('creator', 'some_random_string')
+            'Authorization': make_auth_header('creator', 'some_random_string')
         })
         assert response.status_code == 403
         assert response.json == {'status': 'error', 'error': 'Wrong password'}
@@ -165,15 +155,17 @@ class TestMeetingsGetView:
         self.end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
         db.create_all()
 
+        self.creator = create_user(name='creator', password='foo')
         user1 = create_user(name='inv1', password='')
         user2 = create_user(name='inv2', password='')
         user3 = create_user(name='inv3', password='')
         meeting = create_meeting(
-            creator=create_user(name='creator', password=''),
+            creator=self.creator,
             start=int(self.start.timestamp()),
             end=int(self.end.timestamp()),
             description='DESCRIPTION',
             invitees=[user1, user2, user3],
+            is_private=True,
         )
         set_answer_for_invitation(user2, meeting, True)
         set_answer_for_invitation(user3, meeting, False)
@@ -183,7 +175,7 @@ class TestMeetingsGetView:
         self.client = app.test_client()
 
     def test_ok(self):
-        response = self.client.get('/meetings/{}'.format(self.meeting_id))
+        response = self.client.get('/meetings/{}'.format(self.meeting_id), headers=make_headers(self.creator))
 
         assert response.status_code == 200
         assert response.json == {
@@ -195,6 +187,7 @@ class TestMeetingsGetView:
                 'start_datetime': self.start.isoformat(),
                 'end_datetime': self.end.isoformat(),
                 'repeat_type': 'none',
+                'is_private': True,
                 'invitees': [
                     {'accepted_invitation': None, 'username': 'inv1'},
                     {'accepted_invitation': True, 'username': 'inv2'},
@@ -217,3 +210,16 @@ class TestMeetingsGetView:
         response = self.client.get('/meetings/9999')
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
+
+    def test_ok_private_meeting_wo_auth(self):
+        response = self.client.get('/meetings/{}'.format(self.meeting_id))
+
+        assert response.status_code == 200
+        assert response.json == {
+            'status': 'ok',
+            'meeting_description': {
+                'id': 1,
+                'start_datetime': self.start.isoformat(),
+                'end_datetime': self.end.isoformat(),
+            },
+        }

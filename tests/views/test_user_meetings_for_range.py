@@ -11,8 +11,11 @@ from unittest.mock import (
 from app.db_actions import (
     create_meeting,
     create_user,
+    get_user_by_name,
 )
 from app.forms import UserMeetingsForRangeModel
+
+from tests.utils import make_headers
 
 
 @pytest.fixture(autouse=True)
@@ -32,6 +35,7 @@ def prepare(app: Flask):
         start=int(datetime.fromisoformat('2022-06-22T17:00+00:00').timestamp()),
         end=int(datetime.fromisoformat('2022-06-22T18:00+00:00').timestamp()),
         invitees=[user1],
+        is_private=True,
     )
     create_meeting(
         creator=user3,
@@ -52,7 +56,9 @@ class TestUserMeetingsForRangeView:
             query_string={
                 'start': '2022-06-22T14:00+00:00',
                 'end': '2022-06-22T22:00+00:00',
-            })
+            },
+            headers=make_headers(get_user_by_name('user1')),
+        )
         assert response.status_code == 200
         assert response.json == {
             'status': 'ok',
@@ -64,6 +70,7 @@ class TestUserMeetingsForRangeView:
                     'end_datetime': '2022-06-22T16:00:00+00:00',
                     'id': 1,
                     'repeat_type': 'none',
+                    'is_private': False,
                     'invitees': [
                         {'accepted_invitation': None, 'username': 'user2'},
                         {'accepted_invitation': None, 'username': 'user3'},
@@ -76,6 +83,7 @@ class TestUserMeetingsForRangeView:
                     'end_datetime': '2022-06-22T18:00:00+00:00',
                     'id': 2,
                     'repeat_type': 'none',
+                    'is_private': True,
                     'invitees': [
                         {'accepted_invitation': None, 'username': 'user1'},
                     ],
@@ -109,3 +117,37 @@ class TestUserMeetingsForRangeView:
                 'username': ['string does not match regex "^[a-zA-Z_]\\w*$"'],
             },
         }
+
+    def test_ok_wo_auth(self):
+        response = self.client.get(
+            '/users/user1/meetings',
+            query_string={
+                'start': '2022-06-22T14:00+00:00',
+                'end': '2022-06-22T22:00+00:00',
+            },
+        )
+        assert response.status_code == 200
+        assert response.json == {
+            'status': 'ok',
+            'meetings': [
+                {
+                    'creator': 'user1',
+                    'description': None,
+                    'start_datetime': '2022-06-22T15:00:00+00:00',
+                    'end_datetime': '2022-06-22T16:00:00+00:00',
+                    'id': 1,
+                    'repeat_type': 'none',
+                    'is_private': False,
+                    'invitees': [
+                        {'accepted_invitation': None, 'username': 'user2'},
+                        {'accepted_invitation': None, 'username': 'user3'},
+                    ],
+                },
+                {
+                    'start_datetime': '2022-06-22T17:00:00+00:00',
+                    'end_datetime': '2022-06-22T18:00:00+00:00',
+                    'id': 2,
+                },
+            ],
+        }
+

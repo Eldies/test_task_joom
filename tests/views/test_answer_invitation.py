@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
 import pytest
 from unittest.mock import (
     Mock,
@@ -13,8 +12,11 @@ from app.db_actions import (
     get_invitation,
 )
 from app.forms import AnswerInvitationModel
-from app.models import User
 
+from tests.utils import (
+    make_auth_header,
+    make_headers,
+)
 
 class TestAnswerInvitationView:
     @pytest.fixture(autouse=True)
@@ -40,19 +42,6 @@ class TestAnswerInvitationView:
 
         self.client = client
 
-    def make_auth_header(self, username, password):
-        return 'Basic {}'.format(
-            base64.encodebytes('{}:{}'.format(
-                username,
-                password,
-            ).encode()).decode().strip()
-        )
-
-    def make_headers(self, auth_user: User):
-        return {
-            'Authorization': self.make_auth_header(auth_user.name, auth_user.password)
-        }
-
     def test_not_authenticated(self):
         response = self.client.post(
             '/invitations',
@@ -66,7 +55,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             data=self.default_args,
-            headers=self.make_headers(wrong_user),
+            headers=make_headers(wrong_user),
         )
         assert response.status_code == 403
         assert response.json == {'status': 'error', 'error': 'Wrong user'}
@@ -76,7 +65,7 @@ class TestAnswerInvitationView:
             '/invitations',
             data=self.default_args,
             headers={
-                'Authorization': self.make_auth_header('user1', 'some_random_string'),
+                'Authorization': make_auth_header('user1', 'some_random_string'),
             },
         )
         assert response.status_code == 403
@@ -91,7 +80,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             data=dict(self.default_args, answer='true' if answer else 'false'),
-            headers=self.make_headers(self.invited_user),
+            headers=make_headers(self.invited_user),
         )
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
@@ -115,7 +104,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             data=dict(self.default_args, meeting_id=9999),
-            headers=self.make_headers(self.invited_user),
+            headers=make_headers(self.invited_user),
         )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
@@ -125,7 +114,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             data=dict(self.default_args, username=self.not_invited_user.name),
-            headers=self.make_headers(self.not_invited_user),
+            headers=make_headers(self.not_invited_user),
         )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}
