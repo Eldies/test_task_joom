@@ -4,6 +4,7 @@ from datetime import (
     timezone,
 )
 from flask import (
+    abort,
     jsonify,
     request,
     Response,
@@ -93,6 +94,9 @@ class FindFreeWindowForUsersView(MethodView):
             window_size=form.window_size,
             start=start_timestamp,
         )
+        if window_start_timestamp is None:
+            abort(404, 'Impossible to find window for meeting')
+
         return jsonify(dict(status='ok', window={
             'start': datetime.fromtimestamp(window_start_timestamp, tz=timezone.utc).isoformat(),
             'end': datetime.fromtimestamp(window_start_timestamp + form.window_size, tz=timezone.utc).isoformat(),

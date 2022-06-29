@@ -13,12 +13,14 @@ from app.db_actions import (
     create_user,
 )
 from app.forms import FindFreeWindowForUsersModel
+from app.logic import RepeatTypeEnum
 
 
 @pytest.fixture(autouse=True)
 def many_meetings(app: Flask):
     creator1 = create_user('creator1')
     creator2 = create_user('creator2')
+    creator3 = create_user('creator3')
     return [
         create_meeting(
             creator=creator1,
@@ -39,6 +41,12 @@ def many_meetings(app: Flask):
             creator=creator2,
             start=datetime.fromisoformat('2022-06-22T18:00+00:00'),
             end=datetime.fromisoformat('2022-06-22T19:00+00:00'),
+        ),
+        create_meeting(
+            creator=creator3,
+            start=datetime.fromisoformat('2022-06-22T00:00+00:00'),
+            end=datetime.fromisoformat('2022-06-22T23:30+00:00'),
+            repeat_type=RepeatTypeEnum.daily,
         ),
     ]
 
@@ -112,3 +120,14 @@ class TestFindFreeWindowForUsersView:
                 'window_size': ['field required'],
             },
         }
+
+    def test_no_window(self):
+        response = self.client.get(
+            'find_free_window_for_users',
+            query_string={
+                'usernames': 'creator3',
+                'window_size': 60*60,
+                'start': '2022-06-22T11:30+00:00'
+            })
+        assert response.status_code == 404
+        assert response.json == {'error': 'Impossible to find window for meeting', 'status': 'error'}
