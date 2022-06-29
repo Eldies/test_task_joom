@@ -42,6 +42,7 @@ def test_ok():
     assert meeting.start == 1000
     assert meeting.end == 2000
     assert len(meeting.invitations) == 2
+    assert meeting.is_private is False
     for invitee in invitees:
         invitation = db.session.query(Invitation).filter_by(invitee=invitee, meeting=meeting).first()
         assert invitation is not None
@@ -101,3 +102,13 @@ def test_fails_if_end_wo_tz_info():
             start=2000,
             end=datetime.fromisoformat('2022-06-22T17:00'),
         )
+
+
+def test_ok_private():
+    meeting = create_meeting(
+        creator=get_user_by_name('creator'),
+        start=2000,
+        end=3000,
+        is_private=True,
+    )
+    assert meeting.is_private is True

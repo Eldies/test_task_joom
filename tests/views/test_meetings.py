@@ -68,6 +68,7 @@ class TestMeetingsPostView:
         assert meeting.description is None
         assert meeting.invitations == []
         assert meeting.repeat_type == 'none'
+        assert meeting.is_private is False
 
     def test_not_authenticated(self):
         response = self.client.post('/meetings', data=self.default_args)
@@ -148,6 +149,13 @@ class TestMeetingsPostView:
         response = self.client.post('/meetings', data=dict(self.default_args, invitees='invitee1,nonexistent_invitee'), headers=self.headers)
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "nonexistent_invitee" does not exist'}
+
+    def test_ok_with_is_private(self):
+        response = self.client.post('/meetings', data=dict(self.default_args, is_private='true'), headers=self.headers)
+        assert response.status_code == 200
+        assert response.json == {'status': 'ok', 'meeting_id': 1}
+        meeting = get_meeting_by_id(1)
+        assert meeting.is_private is True
 
 
 class TestMeetingsGetView:

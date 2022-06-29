@@ -42,6 +42,7 @@ class Meeting(Base):
     end = Column(Integer, nullable=False)
     repeat_type = Column(String(20))
     description = Column(String(200))
+    is_private = Column(Boolean, nullable=False, default=False)
 
     creator = relationship("User")
     invitations = relationship("Invitation", back_populates="meeting")

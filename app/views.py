@@ -70,6 +70,7 @@ class MeetingsView(MethodView, AuthenticationMixin):
             description=form.description,
             invitees=[get_user_by_name(name=name) for name in (form.invitees or [])],
             repeat_type=form.repeat_type,
+            is_private=form.is_private,
         )
 
         return jsonify(dict(status='ok', meeting_id=meeting.id))

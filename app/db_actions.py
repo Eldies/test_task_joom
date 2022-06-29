@@ -46,6 +46,7 @@ def create_meeting(
         description: str = None,
         invitees: list[User] = None,
         repeat_type: RepeatTypeEnum = RepeatTypeEnum.none,
+        is_private: bool = None,
 ) -> Meeting:
     if isinstance(start, datetime):
         assert start.tzinfo is not None
@@ -61,6 +62,7 @@ def create_meeting(
         end=end,
         description=description,
         repeat_type=repeat_type,
+        is_private=is_private,
     )
     db.session.add(meeting)
 

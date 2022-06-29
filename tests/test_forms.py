@@ -66,6 +66,7 @@ class TestMeetingsModel:
         dict(default_args, repeat_type='weekly'),
         dict(default_args, repeat_type='yearly'),
         dict(default_args, repeat_type='every_working_day'),
+        dict(default_args, is_private='true'),
     ])
     def test_ok(self, form):
         MeetingsModel(**form)
@@ -87,6 +88,7 @@ class TestMeetingsModel:
         (dict(default_args, invitees='1aa'), ('invitees', 0), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
         (dict(default_args, invitees='a'*31), ('invitees', 0), 'ensure this value has at most 30 characters'),
         (dict(default_args, repeat_type='abyrvalg'), ('repeat_type', ), "value is not a valid enumeration member; permitted: 'none', 'daily', 'weekly', 'every_working_day', 'yearly', 'monthly'"),
+        (dict(default_args, is_private='something'), ('is_private', ), 'value could not be parsed to a boolean'),
     ])
     def test_not_ok(self, form, loc, msg):
         with pytest.raises(ValidationError) as excinfo:

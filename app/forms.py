@@ -46,6 +46,7 @@ class MeetingsModel(RangeModel):
     description: Optional[str]
     invitees: Optional[list[UsernameField]]
     repeat_type: RepeatTypeEnum = RepeatTypeEnum.none
+    is_private: bool = False
 
     @validator('invitees', pre=True)
     def split_invitees(cls, value: str) -> list[str]:
