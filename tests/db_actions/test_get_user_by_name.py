@@ -10,7 +10,7 @@ from app.models import User
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    db.session.add(User(name='existing_username'))
+    db.session.add(User(name='existing_username', password='foo'))
     db.session.commit()
 
 
@@ -19,6 +19,7 @@ def test_ok():
     assert user is not None
     assert user == db.session.query(User).first()
     assert user.name == 'existing_username'
+    assert user.password == 'foo'
 
 
 def test_not_existing_user():

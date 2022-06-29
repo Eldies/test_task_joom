@@ -138,29 +138,38 @@ class TestUserMeetingsForRangeModel:
 
 
 class TestUsersModel:
-    @pytest.mark.parametrize('username', [
-        'aa',
-        'a' * 30,
-        'qwertQWERTY23456_',
-    ])
-    def test_ok(self, username):
-        form = UsersModel(username=username)
-        assert form.username == username
+    default_args = dict(
+        username='username',
+        password='password',
+    )
 
-    @pytest.mark.parametrize('form,msg', [
-        (dict(), 'field required'),
-        (dict(username=None), 'none is not an allowed value'),
-        (dict(username=''), 'ensure this value has at least 2 characters'),
-        (dict(username='a'), 'ensure this value has at least 2 characters'),
-        (dict(username='a' * 31), 'ensure this value has at most 30 characters'),
-        (dict(username='a b'), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
-        (dict(username='1ab'),  'string does not match regex "^[a-zA-Z_]\\w*$"'),
+    @pytest.mark.parametrize('form', [
+        default_args,
+        dict(default_args, username='aa'),
+        dict(default_args, username='a' * 30),
+        dict(default_args, username='qwertQWERTY23456_'),
+        dict(default_args, password='qwertQWERTY23456_'),
     ])
-    def test_not_ok(self, form, msg):
+    def test_ok(self, form):
+        form = UsersModel(**form)
+        assert form.dict() == form
+
+    @pytest.mark.parametrize('form,loc,msg', [
+        (dict(password='password'), ('username',), 'field required'),
+        (dict(username='username'), ('password',), 'field required'),
+        (dict(default_args, username=None), ('username',), 'none is not an allowed value'),
+        (dict(default_args, username=''), ('username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, username='a'), ('username',), 'ensure this value has at least 2 characters'),
+        (dict(default_args, username='a' * 31), ('username',), 'ensure this value has at most 30 characters'),
+        (dict(default_args, username='a b'), ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, username='1ab'),  ('username',), 'string does not match regex "^[a-zA-Z_]\\w*$"'),
+        (dict(default_args, password=None), ('password',), 'none is not an allowed value'),
+    ])
+    def test_not_ok(self, form, loc, msg):
         with pytest.raises(ValidationError) as excinfo:
             UsersModel(**form)
         assert len(excinfo.value.errors()) == 1
-        assert excinfo.value.errors()[0]['loc'] == ('username',)
+        assert excinfo.value.errors()[0]['loc'] == loc
         assert excinfo.value.errors()[0]['msg'] == msg
 
 

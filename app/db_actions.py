@@ -29,9 +29,9 @@ def get_user_by_name(name: str) -> User:
     return user
 
 
-def create_user(name: str) -> User:
+def create_user(name: str, password: str) -> User:
     try:
-        user = User(name=name)
+        user = User(name=name, password=password)
         db.session.add(user)
         db.session.commit()
         return user

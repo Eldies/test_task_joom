@@ -29,13 +29,15 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True, nullable=False)
+    # password is stored in plain text. Don't do that!
+    password = Column(String(50), nullable=False)
 
 
 class Meeting(Base):
     __tablename__ = 'meetings'
 
     id = Column(Integer, primary_key=True)
-    creator_id = Column(Integer, ForeignKey("users.id"))
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     start = Column(Integer, nullable=False)
     end = Column(Integer, nullable=False)
     repeat_type = Column(String(20))

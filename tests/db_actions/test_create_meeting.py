@@ -18,10 +18,10 @@ from app.models import (
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    create_user('creator')
-    create_user('user1')
-    create_user('user2')
-    create_user('user3')
+    create_user('creator', password='')
+    create_user('user1', password='')
+    create_user('user2', password='')
+    create_user('user3', password='')
 
 
 def test_ok():

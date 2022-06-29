@@ -19,9 +19,9 @@ class TestAnswerInvitationView:
     def _setup(self, client):
         db.session.commit()
         db.session.expire_on_commit = False
-        self.creator = create_user(name='creator')
-        self.invited_user = create_user(name='user1')
-        self.not_invited_user = create_user(name='user2')
+        self.creator = create_user(name='creator', password='')
+        self.invited_user = create_user(name='user1', password='')
+        self.not_invited_user = create_user(name='user2', password='')
         self.meeting = create_meeting(
             creator=self.creator,
             start=1000,

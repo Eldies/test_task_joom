@@ -15,7 +15,7 @@ from app.models import Meeting
 @pytest.fixture()
 def meeting_id(app: Flask) -> int:
     meeting = create_meeting(
-        creator=create_user('creator'),
+        creator=create_user('creator', password=''),
         start=1000,
         end=2000,
         description='DESC',

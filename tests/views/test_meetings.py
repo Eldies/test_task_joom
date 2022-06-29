@@ -24,9 +24,9 @@ from app.forms import MeetingsModel
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, client):
-        create_user(name='creator')
-        create_user(name='invitee1')
-        create_user(name='invitee2')
+        create_user(name='creator', password='')
+        create_user(name='invitee1', password='')
+        create_user(name='invitee2', password='')
 
         self.client = client
 
@@ -122,11 +122,11 @@ class TestMeetingsGetView:
         self.end = datetime.fromisoformat('2022-06-22T20:00:00+00:00')
         db.create_all()
 
-        user1 = create_user(name='inv1')
-        user2 = create_user(name='inv2')
-        user3 = create_user(name='inv3')
+        user1 = create_user(name='inv1', password='')
+        user2 = create_user(name='inv2', password='')
+        user3 = create_user(name='inv3', password='')
         meeting = create_meeting(
-            creator=create_user(name='creator'),
+            creator=create_user(name='creator', password=''),
             start=int(self.start.timestamp()),
             end=int(self.end.timestamp()),
             description='DESCRIPTION',

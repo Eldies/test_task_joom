@@ -34,7 +34,7 @@ def ping():
 class UsersView(MethodView):
     def post(self) -> Response:
         form = forms.UsersModel(**request.form)
-        create_user(name=form.username)
+        create_user(name=form.username, password=form.password)
         return jsonify(dict(status='ok'))
 
 

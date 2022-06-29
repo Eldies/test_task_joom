@@ -18,9 +18,9 @@ from app.logic import RepeatTypeEnum
 
 @pytest.fixture(autouse=True)
 def many_meetings(app: Flask):
-    creator1 = create_user('creator1')
-    creator2 = create_user('creator2')
-    creator3 = create_user('creator3')
+    creator1 = create_user('creator1', password='')
+    creator2 = create_user('creator2', password='')
+    creator3 = create_user('creator3', password='')
     return [
         create_meeting(
             creator=creator1,

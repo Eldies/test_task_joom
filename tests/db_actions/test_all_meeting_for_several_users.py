@@ -16,10 +16,10 @@ from app.logic import RepeatTypeEnum
 
 @pytest.fixture(autouse=True)
 def prepare(app: Flask):
-    user1 = create_user('user1')
-    user2 = create_user('user2')
-    user3 = create_user('user3')
-    user4 = create_user('user4')
+    user1 = create_user('user1', password='')
+    user2 = create_user('user2', password='')
+    user3 = create_user('user3', password='')
+    user4 = create_user('user4', password='')
 
     create_meeting(
         creator=user1,
@@ -131,7 +131,7 @@ def test_user1_first_meeting_already_ended():
 @pytest.fixture()
 def daily_meeting(app: Flask):
     return create_meeting(
-        creator=create_user('user55'),
+        creator=create_user('user55', password=''),
         start=datetime.fromisoformat('2022-06-22T17:00+00:00'),
         end=datetime.fromisoformat('2022-06-22T18:00+00:00'),
         repeat_type=RepeatTypeEnum.daily,

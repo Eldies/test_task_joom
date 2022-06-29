@@ -17,18 +17,18 @@ from app.models import (
 
 @pytest.fixture()
 def invited_user(app: Flask) -> User:
-    return create_user('invited_user')
+    return create_user('invited_user', password='')
 
 
 @pytest.fixture()
 def not_invited_user(app:Flask) -> User:
-    return create_user('not_invited_user')
+    return create_user('not_invited_user', password='')
 
 
 @pytest.fixture()
 def meeting(app: Flask, invited_user) -> Meeting:
     return create_meeting(
-        creator=create_user('creator'),
+        creator=create_user('creator', password=''),
         start=1000,
         end=2000,
         description='DESC',

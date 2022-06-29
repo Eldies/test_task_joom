@@ -37,10 +37,10 @@ def test_get_repeated_timestamp():
 
 @pytest.fixture()
 def meeting(app: Flask):
-    creator = create_user('creator')
-    user1 = create_user('user1')
-    user2 = create_user('user2')
-    user3 = create_user('user3')
+    creator = create_user('creator', password='')
+    user1 = create_user('user1', password='')
+    user2 = create_user('user2', password='')
+    user3 = create_user('user3', password='')
 
     meeting = create_meeting(
         creator=creator,
@@ -72,7 +72,7 @@ def test_make_meeting_description(meeting: Meeting):
 
 @pytest.fixture()
 def many_meetings(app: Flask):
-    creator = create_user('creator')
+    creator = create_user('creator', password='')
     return [
         create_meeting(creator=creator, start=1000, end=2000),
         create_meeting(creator=creator, start=1000, end=4000),
@@ -99,7 +99,7 @@ def test_find_first_free_window_among_meetings_no_meetings():
 
 @pytest.fixture()
 def with_daily_meeting(app: Flask):
-    creator = create_user('user1')
+    creator = create_user('user1', password='')
     m1 = create_meeting(
         creator=creator,
         start=datetime.fromisoformat('2022-06-22T17:00+00:00'),
@@ -126,7 +126,7 @@ def test_find_first_free_window_among_meetings_with_daily_meeting(with_daily_mee
 
 @pytest.fixture()
 def infinite_daily_meeting(app: Flask):
-    creator = create_user('user1')
+    creator = create_user('user1', password='')
     m1 = create_meeting(
         creator=creator,
         start=datetime.fromisoformat('2022-06-22T00:00+00:00'),

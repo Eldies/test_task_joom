@@ -17,9 +17,9 @@ from app.forms import UserMeetingsForRangeModel
 
 @pytest.fixture(autouse=True)
 def prepare(app: Flask):
-    user1 = create_user('user1')
-    user2 = create_user('user2')
-    user3 = create_user('user3')
+    user1 = create_user('user1', password='')
+    user2 = create_user('user2', password='')
+    user3 = create_user('user3', password='')
 
     create_meeting(
         creator=user1,
