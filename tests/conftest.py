@@ -19,3 +19,11 @@ def app() -> Flask:
 @pytest.fixture()
 def client(app: Flask) -> FlaskClient:
     return app.test_client()
+
+
+@pytest.fixture(autouse=True)
+def mock_password_hashing(monkeypatch, request):
+    if 'no_mock_password_hashing' in request.keywords:
+        return
+    monkeypatch.setattr('app.models.User.generate_password_hash', lambda p: p)
+    monkeypatch.setattr('app.models.User.check_password', lambda self, p: self.password_hash == p)

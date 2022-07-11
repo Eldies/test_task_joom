@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import pytest
+
 from app.models import User
 
 
+@pytest.mark.no_mock_password_hashing
 class TestUser:
     def test_same_hash_if_same_salt(self, monkeypatch):
         monkeypatch.setattr('werkzeug.security.gen_salt', lambda length: 'a' * length)
