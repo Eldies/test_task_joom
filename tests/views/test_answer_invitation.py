@@ -45,7 +45,7 @@ class TestAnswerInvitationView:
     def test_not_authenticated(self):
         response = self.client.post(
             '/invitations',
-            data=self.default_args,
+            json=self.default_args,
         )
         assert response.status_code == 401
         assert response.json == {'status': 'error', 'error': 'Not authenticated'}
@@ -54,7 +54,7 @@ class TestAnswerInvitationView:
         wrong_user = create_user('wrong_user', 'bar')
         response = self.client.post(
             '/invitations',
-            data=self.default_args,
+            json=self.default_args,
             headers=make_headers(wrong_user),
         )
         assert response.status_code == 403
@@ -63,7 +63,7 @@ class TestAnswerInvitationView:
     def test_authenticated_with_wrong_password(self):
         response = self.client.post(
             '/invitations',
-            data=self.default_args,
+            json=self.default_args,
             headers={
                 'Authorization': make_auth_header('user1', 'some_random_string'),
             },
@@ -79,7 +79,7 @@ class TestAnswerInvitationView:
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
         response = self.client.post(
             '/invitations',
-            data=dict(self.default_args, answer='true' if answer else 'false'),
+            json=dict(self.default_args, answer='true' if answer else 'false'),
             headers=make_headers(self.invited_user),
         )
         assert response.status_code == 200
@@ -88,7 +88,7 @@ class TestAnswerInvitationView:
 
     def test_validates_input(self):
         with patch('app.forms.AnswerInvitationModel', Mock(wraps=AnswerInvitationModel)) as mock:
-            response = self.client.post('/invitations', data=dict(foo='bar'))
+            response = self.client.post('/invitations', json=dict(foo='bar'))
         assert mock.call_count == 1
         assert mock.call_args.kwargs == dict(foo='bar')
         assert response.json == {
@@ -103,7 +103,7 @@ class TestAnswerInvitationView:
     def test_nonexistent_meeting(self):
         response = self.client.post(
             '/invitations',
-            data=dict(self.default_args, meeting_id=9999),
+            json=dict(self.default_args, meeting_id=9999),
             headers=make_headers(self.invited_user),
         )
         assert response.status_code == 404
@@ -113,7 +113,7 @@ class TestAnswerInvitationView:
     def test_not_invited_user(self):
         response = self.client.post(
             '/invitations',
-            data=dict(self.default_args, username=self.not_invited_user.name),
+            json=dict(self.default_args, username=self.not_invited_user.name),
             headers=make_headers(self.not_invited_user),
         )
         assert response.status_code == 404
@@ -121,7 +121,7 @@ class TestAnswerInvitationView:
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None
 
     def test_nonexistent_username(self):
-        response = self.client.post('/invitations', data=dict(self.default_args, username='FOO'))
+        response = self.client.post('/invitations', json=dict(self.default_args, username='FOO'))
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User "FOO" does not exist'}
         assert get_invitation(invitee=self.invited_user, meeting=self.meeting).answer is None

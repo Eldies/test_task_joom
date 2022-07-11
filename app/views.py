@@ -52,14 +52,14 @@ class AuthenticationMixin:
 
 class UsersView(MethodView):
     def post(self) -> Response:
-        form = forms.UsersModel(**request.form)
+        form = forms.UsersModel(**request.json)
         create_user(name=form.username, password=form.password)
         return jsonify(dict(status='ok'))
 
 
 class MeetingsView(MethodView, AuthenticationMixin):
     def post(self) -> Response:
-        form = forms.MeetingsModel(**request.form)
+        form = forms.MeetingsModel(**request.json)
 
         creator = get_user_by_name(form.creator_username)
         self.assert_user_is_authenticated(creator)
@@ -83,7 +83,7 @@ class MeetingsView(MethodView, AuthenticationMixin):
 
 class AnswerInvitationView(MethodView, AuthenticationMixin):
     def post(self) -> Response:
-        form = forms.AnswerInvitationModel(**request.form)
+        form = forms.AnswerInvitationModel(**request.json)
         user = get_user_by_name(form.username)
         self.assert_user_is_authenticated(user)
         set_answer_for_invitation(
