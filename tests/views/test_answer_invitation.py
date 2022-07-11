@@ -24,8 +24,8 @@ class TestAnswerInvitationView:
         db.session.commit()
         db.session.expire_on_commit = False
         self.creator = create_user(name='creator', password='')
-        self.invited_user = create_user(name='user1', password='')
-        self.not_invited_user = create_user(name='user2', password='')
+        self.invited_user = create_user(name='invited_user', password='')
+        self.not_invited_user = create_user(name='not_invited_user', password='')
         self.meeting = create_meeting(
             creator=self.creator,
             start=1000,
@@ -51,11 +51,11 @@ class TestAnswerInvitationView:
         assert response.json == {'status': 'error', 'error': 'Not authenticated'}
 
     def test_authenticated_as_wrong_user(self):
-        wrong_user = create_user('wrong_user', 'bar')
+        create_user('wrong_user', 'bar')
         response = self.client.post(
             '/invitations',
             json=self.default_args,
-            headers=make_headers(wrong_user),
+            headers=make_headers(name='wrong_user', password='bar'),
         )
         assert response.status_code == 403
         assert response.json == {'status': 'error', 'error': 'Wrong user'}
@@ -65,7 +65,7 @@ class TestAnswerInvitationView:
             '/invitations',
             json=self.default_args,
             headers={
-                'Authorization': make_auth_header('user1', 'some_random_string'),
+                'Authorization': make_auth_header('invited_user', 'some_random_string'),
             },
         )
         assert response.status_code == 403
@@ -80,7 +80,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             json=dict(self.default_args, answer='true' if answer else 'false'),
-            headers=make_headers(self.invited_user),
+            headers=make_headers(name='invited_user', password=''),
         )
         assert response.status_code == 200
         assert response.json == {'status': 'ok'}
@@ -104,7 +104,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             json=dict(self.default_args, meeting_id=9999),
-            headers=make_headers(self.invited_user),
+            headers=make_headers(name='invited_user', password=''),
         )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'Meeting with id "9999" does not exist'}
@@ -114,7 +114,7 @@ class TestAnswerInvitationView:
         response = self.client.post(
             '/invitations',
             json=dict(self.default_args, username=self.not_invited_user.name),
-            headers=make_headers(self.not_invited_user),
+            headers=make_headers(name='not_invited_user', password=''),
         )
         assert response.status_code == 404
         assert response.json == {'status': 'error', 'error': 'User was not invited to this meeting'}

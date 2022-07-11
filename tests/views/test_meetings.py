@@ -29,7 +29,7 @@ from tests.utils import (
 class TestMeetingsPostView:
     @pytest.fixture(autouse=True)
     def _setup(self, client):
-        creator = create_user(name='creator', password='foo')
+        create_user(name='creator', password='foo')
         create_user(name='invitee1', password='')
         create_user(name='invitee2', password='')
 
@@ -40,7 +40,7 @@ class TestMeetingsPostView:
             start='2022-06-22T19:00:00+01:00',
             end='2022-06-22T20:00:00-03:00',
         )
-        self.headers = make_headers(creator)
+        self.headers = make_headers(name='creator', password='foo')
 
     def test_ok(self):
         with pytest.raises(NotFoundException):
@@ -66,8 +66,12 @@ class TestMeetingsPostView:
         assert response.json == {'status': 'error', 'error': 'Not authenticated'}
 
     def test_authenticated_as_wrong_user(self):
-        wrong_user = create_user('wrong_user', 'bar')
-        response = self.client.post('/meetings', json=self.default_args, headers=make_headers(wrong_user))
+        create_user('wrong_user', 'bar')
+        response = self.client.post(
+            '/meetings',
+            json=self.default_args,
+            headers=make_headers(name='wrong_user', password='bar'),
+        )
         assert response.status_code == 403
         assert response.json == {'status': 'error', 'error': 'Wrong user'}
 
@@ -175,7 +179,10 @@ class TestMeetingsGetView:
         self.client = app.test_client()
 
     def test_ok(self):
-        response = self.client.get('/meetings/{}'.format(self.meeting_id), headers=make_headers(self.creator))
+        response = self.client.get(
+            '/meetings/{}'.format(self.meeting_id),
+            headers=make_headers(name='creator', password='foo'),
+        )
 
         assert response.status_code == 200
         assert response.json == {

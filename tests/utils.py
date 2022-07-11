@@ -13,7 +13,7 @@ def make_auth_header(username: str, password: str) -> str:
     )
 
 
-def make_headers(auth_user: User) -> dict[str, str]:
+def make_headers(name: str, password: str) -> dict[str, str]:
     return {
-        'Authorization': make_auth_header(auth_user.name, auth_user.password)
+        'Authorization': make_auth_header(name, password)
     }

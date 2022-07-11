@@ -18,6 +18,10 @@ from sqlalchemy.orm import (
     declarative_base,
     relationship,
 )
+from werkzeug.security import (
+    check_password_hash,
+    generate_password_hash,
+)
 
 metadata = MetaData()
 Base = declarative_base(metadata=metadata)
@@ -29,8 +33,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True, nullable=False)
-    # password is stored in plain text. Don't do that!
-    password = Column(String(50), nullable=False)
+    password_hash = Column(String(120), nullable=False)
+
+    @classmethod
+    def generate_password_hash(cls, password: str) -> str:
+        return generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
 
 
 class Meeting(Base):

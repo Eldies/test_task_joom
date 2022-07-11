@@ -10,8 +10,13 @@ from app.models import User
 
 @pytest.fixture(autouse=True)
 def init_db(app: Flask) -> None:
-    db.session.add(User(name='existing_username', password=''))
+    db.session.add(User(name='existing_username', password_hash=''))
     db.session.commit()
+
+
+@pytest.fixture(autouse=True)
+def constant_salt(monkeypatch) -> None:
+    monkeypatch.setattr('werkzeug.security.gen_salt', lambda length: 'a' * length)
 
 
 def test_ok():
@@ -20,7 +25,7 @@ def test_ok():
     assert user == db.session.query(User).filter_by(name='not_existing_username').first()
     assert user is not None
     assert user.name == 'not_existing_username'
-    assert user.password == 'foo'
+    assert user.password_hash == 'pbkdf2:sha256:260000$aaaaaaaaaaaaaaaa$2f256007ef4bc4e61cb71eabf91092e9a964cbb3c9b91a6bca44ebf64e5ed3d0'
 
 
 def test_existing_user():

@@ -38,7 +38,7 @@ class AuthenticationMixin:
         if auth_info is None:
             return None
         user = get_user_by_name(auth_info.username)
-        if auth_info['password'] != user.password:
+        if not user.check_password(auth_info['password']):
             abort(403, 'Wrong password')
         return user
 

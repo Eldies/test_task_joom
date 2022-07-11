@@ -26,7 +26,7 @@ class TestUsersPostView:
         assert response.json == {'status': 'ok'}
         user = get_user_by_name('bar')
         assert user.name == 'bar'
-        assert user.password == 'foo'
+        assert user.check_password('foo')
 
     def test_validates_input(self):
         with patch('app.forms.UsersModel', Mock(wraps=UsersModel)) as mock:

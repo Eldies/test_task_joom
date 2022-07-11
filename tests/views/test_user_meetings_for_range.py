@@ -57,7 +57,7 @@ class TestUserMeetingsForRangeView:
                 'start': '2022-06-22T14:00+00:00',
                 'end': '2022-06-22T22:00+00:00',
             },
-            headers=make_headers(get_user_by_name('user1')),
+            headers=make_headers(name='user1', password=''),
         )
         assert response.status_code == 200
         assert response.json == {

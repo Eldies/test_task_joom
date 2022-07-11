@@ -30,7 +30,10 @@ def get_user_by_name(name: str) -> User:
 
 def create_user(name: str, password: str) -> User:
     try:
-        user = User(name=name, password=password)
+        user = User(
+            name=name,
+            password_hash=User.generate_password_hash(password),
+        )
         db.session.add(user)
         db.session.commit()
         return user
